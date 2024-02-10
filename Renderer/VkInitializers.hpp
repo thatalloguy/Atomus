@@ -26,7 +26,6 @@ namespace VkInit {
         info.flags = flags;
         return info;
     }
-
     VkCommandBufferAllocateInfo commandBufferAllocateInfo(VkCommandPool pool, uint32_t count /*= 1*/) {
         VkCommandBufferAllocateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -38,6 +37,35 @@ namespace VkInit {
         return info;
     }
 
+    VkFenceCreateInfo fenceCreateInfo(VkFenceCreateFlags flags /*= 0*/) {
+        VkFenceCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        info.pNext = nullptr;
+
+        info.flags = flags;
+
+        return info;
+    }
+    // I hope setting this to 0 doenst come and bite me in the ass later on :)
+    VkSemaphoreCreateInfo semaphoreCreateInfo(VkSemaphoreCreateFlags flags = 0) {
+        VkSemaphoreCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        info.pNext = nullptr;
+        info.flags = flags;
+
+        return info;
+    }
+
+    VkCommandBufferBeginInfo commandBufferBeginInfo(VkCommandBufferUsageFlags flags /*= 0*/)
+    {
+        VkCommandBufferBeginInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        info.pNext = nullptr;
+
+        info.pInheritanceInfo = nullptr;
+        info.flags = flags;
+        return info;
+    }
 }
 
 

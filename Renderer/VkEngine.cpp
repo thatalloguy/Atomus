@@ -78,7 +78,14 @@ void VulkanEngine::CleanUp()
 
 void VulkanEngine::Draw()
 {
-    // As empty as my brain :)
+    // wait until the gpu has finished rendering the last frame
+    VK_CHECK(vkWaitForFences(_device, 1, &getCurrentFrame()._renderFence, true, 1000000000));
+    VK_CHECK(vkResetFences(_device, 1, &getCurrentFrame()._renderFence));
+
+    // get the image from the swapchain
+    uint32_t swapchainImageIndex;
+    VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, 1000000000, getCurrentFrame()._swapchainSemaphore, nullptr, &swapchainImageIndex));
+
 }
 
 void VulkanEngine::Run()
@@ -187,6 +194,12 @@ void VulkanEngine::initCommands() {
 
 void VulkanEngine::initSyncStructures() {
 
+    // 1 fence to control when the gpu finishes rendering the frame
+    // and 2 semaphores to sync rendering with me swapchain :-)
+    //
+
+    VkFenceCreateInfo fenceCreateInfo = VkInit::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
+    VkSemaphoreCreateInfo semaphoreCreateInfo = VkInit::semaphoreCreateInfo();
 }
 
 void VulkanEngine::createSwapchain(uint32_t width, uint32_t height) {
