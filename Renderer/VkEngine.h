@@ -41,6 +41,10 @@ class VulkanEngine {
         VkDevice _device;
         VkSurfaceKHR _surface;
 
+        // swapchain
+        VkSwapchainKHR _swapchain;
+        VkFormat _swapchainImageFormat;
+
         std::vector<VkImage> _swapchainImages;
         std::vector<VkImageView> _swapchainImageViews;
         VkExtent2D _swapchainExtent;
