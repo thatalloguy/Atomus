@@ -6,11 +6,6 @@
 // Includes and stuff
 #include "VkEngine.h"
 
-// Lets hope including sdl dont break me entire project :|
-// SPOILER it did :( so ima use this hacky solution
-
-
-// Some other variables here :)
 constexpr bool bUseValidationLayers = false;
 
 VulkanEngine* loadedEngine = nullptr;
@@ -18,32 +13,30 @@ VulkanEngine* loadedEngine = nullptr;
 VulkanEngine& VulkanEngine::Get() { return *loadedEngine; };
 
 
-// MAIN STUFF (init function)
 
 void VulkanEngine::Init() {
 
-    // We cant load this shit twice :(
 
     assert(loadedEngine == nullptr);
     loadedEngine = this;
 
     if (!glfwInit()) {
         spdlog::error("Couldn't initialize GLFW\n");
-    }
-
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // Tell GLFW not to create an OpenGL context
-    _window = glfwCreateWindow(800, 600, "Vulkan Engine :)", nullptr, nullptr);
-
-    if (!_window) {
-        spdlog::error("Couldn't create GLFW window\n");
-        glfwTerminate();
     } else {
-        spdlog::info("Created Window Successfully!");
-    }
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    // Loaded and ready to GO!!!!
-    _isInitialized = true;
+        _window = glfwCreateWindow(800, 600, "Vulkan Engine :)", nullptr, nullptr);
+
+        if (!_window) {
+            spdlog::error("Couldn't create GLFW window\n");
+            glfwTerminate();
+        } else {
+            spdlog::info("Created Window Successfully!");
+        }
+
+        // Loaded and ready to GO!!!!
+        _isInitialized = true;
+    }
 
 }
 

@@ -18,6 +18,8 @@
 #include "VkInitializers.h"
 #include "VkTypes.h"
 
+#include <VkBootstrap.h>
+
 #include <chrono>
 #include <thread>
 
@@ -29,9 +31,16 @@ class VulkanEngine {
         int _frameNumber{0};
         bool _stopRendering{ false };
 
-        // Extentstional types and stuff
         VkExtent2D _windowExtent{1280, 720};
         GLFWwindow* _window{ nullptr };
+
+        //Vulkan types
+        VkInstance _instance;
+        VkDebugUtilsMessengerEXT  _debugMessenger;
+        VkPhysicalDevice _chosenGPU;
+        VkDevice _device;
+        VkSurfaceKHR _surface;
+
 
         // -_-
         static VulkanEngine& Get();
@@ -40,15 +49,16 @@ class VulkanEngine {
         // Life-time functions
 
         void Init();
-
         void CleanUp();
-
-
-        /// Draws the application
         void Draw();
-
-        /// runs the main loop (NOT DRAWING)
         void Run();
+
+    private:
+        void initVulkan();
+        void initSwapchain();
+        void initCommands();
+        void initSyncStructures();
+
 };
 
 
