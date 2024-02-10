@@ -17,8 +17,20 @@ add_subdirectory("Thirdparty/fastgltf")
 
 
 add_executable(AtomusVulkan main.cpp
+        # Engine related files
         Renderer/VkEngine.cpp
-        Renderer/VkEngine.h)
+        Renderer/VkEngine.h
+        Renderer/VkInitializers.cpp
+        Renderer/VkInitializers.h
+        Renderer/VkImages.cpp
+        Renderer/VkImages.h
+        Renderer/VkPipelines.cpp
+        Renderer/VkPipelines.h
+        Renderer/VkDescriptors.cpp
+        Renderer/VkDescriptors.h
+        Renderer/VkLoader.cpp
+        Renderer/VkLoader.h
+        Renderer/VkTypes.h)
 
 
 
