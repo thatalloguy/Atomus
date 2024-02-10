@@ -143,7 +143,7 @@ void VulkanEngine::initVulkan() {
 }
 
 void VulkanEngine::initSwapchain() {
-
+    createSwapchain(_windowExtent.width, _windowExtent.height);
 }
 
 void VulkanEngine::initCommands() {
@@ -176,5 +176,9 @@ void VulkanEngine::createSwapchain(uint32_t width, uint32_t height) {
 }
 
 void VulkanEngine::destroySwapchain() {
+    vkDestroySwapchainKHR(_device, _swapchain, nullptr);
 
+    for (auto & _swapchainImageView : _swapchainImageViews) {
+        vkDestroyImageView(_device, _swapchainImageView, nullptr);
+    }
 }
