@@ -15,7 +15,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "VkInitializers.h"
+#include "VkInitializers.hpp"
 #include "VkTypes.h"
 
 #include <VkBootstrap.h>

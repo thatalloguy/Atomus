@@ -53,6 +53,12 @@ void VulkanEngine::CleanUp()
 {
     if (_isInitialized) {
         spdlog::info("Destroying current loaded engine");
+        vkDeviceWaitIdle(_device);
+
+        for (int i=0; i < FRAME_OVERLAP; i++) {
+            vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
+        }
+
 
         destroySwapchain();
 
@@ -163,6 +169,19 @@ void VulkanEngine::initSwapchain() {
 }
 
 void VulkanEngine::initCommands() {
+
+    // create a command pool for commands sumbitted by the graphics queue
+    VkCommandPoolCreateInfo commandPoolInfo = VkInit::commandPoolCreateInfo(_graphicsQueueFamily, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+
+    for (int i=0; i < FRAME_OVERLAP; i++) {
+
+        VK_CHECK(vkCreateCommandPool(_device, &commandPoolInfo, nullptr, &_frames[i]._commandPool));
+
+        // Allocate the default command buffer for rendering
+        VkCommandBufferAllocateInfo cmdAllocInfo = VkInit::commandBufferAllocateInfo(_frames[i]._commandPool, 1);
+
+        VK_CHECK(vkAllocateCommandBuffers(_device, &cmdAllocInfo, &_frames[i]._mainCommandBuffer));
+    }
 
 }
 
