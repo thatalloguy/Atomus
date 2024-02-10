@@ -12,9 +12,44 @@
 #define ATOMUSVULKAN_VKENGINE_H
 
 
-class VkEngine {
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
+#include "VkInitializers.h"
+#include "VkTypes.h"
+
+#include <chrono>
+#include <thread>
+
+class VulkanEngine {
+
+    public:
+        // engine own variables
+        bool _isInitialized{ false };
+        int _frameNumber{0};
+        bool _stopRendering{ false };
+
+        // Extentstional types and stuff
+        VkExtent2D _windowExtent{1280, 720};
+        GLFWwindow* _window{ nullptr };
+
+        // -_-
+        static VulkanEngine& Get();
+
+
+        // Life-time functions
+
+        void Init();
+
+        void CleanUp();
+
+
+        /// Draws the application
+        void Draw();
+
+        /// runs the main loop (NOT DRAWING)
+        void Run();
 };
 
 
-#endif //ATOMUSVULKAN_VKENGINE_H
+#endif

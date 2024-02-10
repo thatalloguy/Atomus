@@ -10,3 +10,6 @@
 [submodule "fastgltf"]
 	path = fastgltf
 	url = https://github.com/spnda/fastgltf
+[submodule "SDL"]
+	path = SDL
+	url = https://github.com/libsdl-org/SDL

@@ -87,7 +87,7 @@ add_dependencies(VmaSample VmaSampleShaders)
 add_compile_definitions(UNICODE _UNICODE)
 
 # Add C++ warnings and security checks
-add_compile_options(/permissive- /sdl /W3)
+add_compile_options(/permissive- /Thirdparty/SDL /W3)
 
 # Set VmaSample as startup project
 set_property(DIRECTORY "../../.." PROPERTY VS_STARTUP_PROJECT "VmaSample")
