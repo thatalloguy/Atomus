@@ -4,3 +4,9 @@
 [submodule "VulkanMemoryAllocator"]
 	path = VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+[submodule "spdlog"]
+	path = spdlog
+	url = https://github.com/gabime/spdlog
+[submodule "fastgltf"]
+	path = fastgltf
+	url = https://github.com/spnda/fastgltf
