@@ -23,10 +23,21 @@
 #include <chrono>
 #include <thread>
 
+
+struct FrameData {
+
+    VkCommandPool _commandPool;
+    VkCommandBuffer _mainCommandBuffer;
+};
+
+constexpr unsigned int FRAME_OVERLAP = 2;
+
+
 class VulkanEngine {
 
     public:
-        // engine own variables
+
+
         bool _isInitialized{ false };
         int _frameNumber{0};
         bool _stopRendering{ false };
@@ -48,6 +59,17 @@ class VulkanEngine {
         std::vector<VkImage> _swapchainImages;
         std::vector<VkImageView> _swapchainImageViews;
         VkExtent2D _swapchainExtent;
+
+        // Command stuff idk
+
+        FrameData _frames[FRAME_OVERLAP];
+
+        FrameData& getCurrentFrame() { return _frames[_frameNumber % FRAME_OVERLAP]; };
+
+        VkQueue _graphicsQueue;
+        uint32_t _graphicsQueueFamily;
+
+
 
 
         // -_-
