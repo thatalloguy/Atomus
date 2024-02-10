@@ -41,6 +41,10 @@ class VulkanEngine {
         VkDevice _device;
         VkSurfaceKHR _surface;
 
+        std::vector<VkImage> _swapchainImages;
+        std::vector<VkImageView> _swapchainImageViews;
+        VkExtent2D _swapchainExtent;
+
 
         // -_-
         static VulkanEngine& Get();
@@ -59,6 +63,9 @@ class VulkanEngine {
         void initCommands();
         void initSyncStructures();
 
+        // swapchain lifetime functions
+        void createSwapchain(uint32_t width, uint32_t height);
+        void destroySwapchain();
 };
 
 

@@ -34,7 +34,16 @@ void VulkanEngine::Init() {
             spdlog::info("Created Window Successfully!");
         }
 
-        // Loaded and ready to GO!!!!
+        // Initialize vulkan
+
+        spdlog::info("initializing Vulkan!");
+
+        initVulkan();
+        initSwapchain();
+        initCommands();
+        initSyncStructures();
+
+
         _isInitialized = true;
     }
 
@@ -81,4 +90,66 @@ void VulkanEngine::Run()
 
             Draw();
         }
+}
+
+
+
+void VulkanEngine::initVulkan() {
+    vkb::InstanceBuilder builder; // bob the builder :)
+
+    auto inst_ret = builder.set_app_name("Atomus Application")
+            .request_validation_layers(bUseValidationLayers)
+            .use_default_debug_messenger()
+            .require_api_version(1, 3, 0)
+            .build(); // TODO replace later one with user one
+
+    vkb::Instance vkb_inst = inst_ret.value();
+
+    // now update our instance :)
+    _instance = vkb_inst.instance;
+    _debugMessenger = vkb_inst.debug_messenger;
+
+
+    if (glfwCreateWindowSurface(_instance, _window, NULL, &_surface) != VK_SUCCESS) {
+        spdlog::error("Could not Create window Surface !");
+        return;
+    }
+
+    VkPhysicalDeviceVulkan13Features features{};
+    features.dynamicRendering = true;
+    features.synchronization2 = true;
+
+    VkPhysicalDeviceVulkan12Features features12{};
+    features12.bufferDeviceAddress = true;
+    features12.descriptorIndexing = true;
+
+    // select a GPU that can write to glfw and supports vulkan 1.3
+    vkb::PhysicalDeviceSelector selector{ vkb_inst};
+    vkb::PhysicalDevice physicalDevice = selector
+            .set_minimum_version(1, 3)
+            .set_required_features_13(features)
+            .set_required_features_12(features12)
+            .set_surface(_surface)
+            .select()
+            .value();
+
+    // Final Vulkan device
+    vkb::DeviceBuilder deviceBuilder{ physicalDevice };
+
+    vkb::Device vkbDevice = deviceBuilder.build().value();
+
+    _device = vkbDevice.device;
+    _chosenGPU = physicalDevice.physical_device;
+}
+
+void VulkanEngine::initSwapchain() {
+
+}
+
+void VulkanEngine::initCommands() {
+
+}
+
+void VulkanEngine::initSyncStructures() {
+
 }
