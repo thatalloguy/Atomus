@@ -3,10 +3,9 @@ project(AtomusVulkan)
 
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(SDL2 REQUIRED)
+find_package(Vulkan REQUIRED)
 
 
-#libs go here :)
 add_subdirectory("Thirdparty/vk-bootstrap")
 add_subdirectory("Thirdparty/VulkanMemoryAllocator")
 add_subdirectory("Thirdparty/spdlog")
@@ -40,7 +39,7 @@ target_link_libraries(AtomusVulkan PRIVATE vk-bootstrap::vk-bootstrap)
 target_link_libraries(AtomusVulkan PRIVATE GPUOpen::VulkanMemoryAllocator)
 target_link_libraries(AtomusVulkan PRIVATE spdlog)
 target_link_libraries(AtomusVulkan PRIVATE fastgltf)
-target_link_libraries(AtomusVulkan PRIVATE glfw)
+target_link_libraries(AtomusVulkan PRIVATE glfw Vulkan::Vulkan)
 
 
 

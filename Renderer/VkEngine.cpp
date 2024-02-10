@@ -53,6 +53,15 @@ void VulkanEngine::CleanUp()
 {
     if (_isInitialized) {
         spdlog::info("Destroying current loaded engine");
+
+        destroySwapchain();
+
+        vkDestroySurfaceKHR(_instance, _surface, nullptr);
+        vkDestroyDevice(_device, nullptr);
+
+        vkb::destroy_debug_utils_messenger(_instance, _debugMessenger);
+
+        vkDestroyInstance(_instance, nullptr);
         glfwDestroyWindow(_window);
         glfwTerminate();
     }
@@ -160,7 +169,7 @@ void VulkanEngine::createSwapchain(uint32_t width, uint32_t height) {
     _swapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
 
     vkb::Swapchain vkbSwapchain = swapchainBuilder
-            .set_desired_format(VkSurfaceFormatKHR{ .format = _swapchainImageFormat, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
+            .set_desired_format(VkSurfaceFormatKHR{ _swapchainImageFormat, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
             .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
             .set_desired_extent(width, height)
             .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
