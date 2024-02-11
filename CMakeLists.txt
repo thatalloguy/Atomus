@@ -18,7 +18,7 @@ add_executable(AtomusVulkan main.cpp
         # Engine related files
         Renderer/VkEngine.cpp
         Renderer/VkEngine.h
-        Renderer/VkInitializers.hpp
+        Renderer/VkInitializers.h
         Renderer/VkImages.cpp
         Renderer/VkImages.h
         Renderer/VkPipelines.cpp
@@ -28,6 +28,7 @@ add_executable(AtomusVulkan main.cpp
         Renderer/VkLoader.cpp
         Renderer/VkLoader.h
         Renderer/VkTypes.h
+        Renderer/VkInitializers.cpp
 
 )
 

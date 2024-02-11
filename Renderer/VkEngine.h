@@ -10,17 +10,10 @@
 
 #pragma once
 
-
+#include "VkInitializers.h"
 #include "VkTypes.h"
-
-#include "VkInitializers.hpp"
-#include <VkBootstrap.h>
-
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
-#include <chrono>
-#include <thread>
 
 
 struct FrameData {
@@ -30,6 +23,7 @@ struct FrameData {
 
     VkSemaphore _swapchainSemaphore, _renderSemaphore;
     VkFence _renderFence;
+
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;

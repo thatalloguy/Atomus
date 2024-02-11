@@ -20,9 +20,17 @@
 #include <functional>
 #include <deque>
 
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#include <chrono>
+
+#include <thread>
 #include <vulkan/vulkan.h>
+
 #include <vulkan/vk_enum_string_helper.h>
 #include <vk_mem_alloc.h>
+#include <VkBootstrap.h>
 
 #include <spdlog/spdlog.h>
 
@@ -36,7 +44,8 @@
     do {                                                                 \
         VkResult err = x;                                                \
         if (err != VK_SUCCESS) {                                         \
+            spdlog::info("ruh roh");                                                             \
             spdlog::error("Detected Vulkan error at {}: {}", __FILE__, __LINE__); \
             abort();                                                     \
-        }                                                                \
+        }                                                          \
     } while (0)

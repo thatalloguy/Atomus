@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 #include "Renderer/VkEngine.h"
 
 int main() {
@@ -11,6 +10,5 @@ int main() {
 
     engine.CleanUp();
 
-    std::cout << "Hello, World!" << std::endl;
     return 0;
 }

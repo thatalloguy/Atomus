@@ -3,7 +3,7 @@
 //
 
 #include "VkImages.h"
-#include "VkInitializers.hpp"
+#include "VkInitializers.h"
 
 void VkUtil::transitionImage(VkCommandBuffer cmd, VkImage image, VkImageLayout currentLayout, VkImageLayout newLayout) {
     VkImageMemoryBarrier2 imageBarrier {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2};
