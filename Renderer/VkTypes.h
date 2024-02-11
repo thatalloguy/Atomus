@@ -8,9 +8,7 @@
  * The entire codebase will include this header, it will provide widely used default structures and includes :)
  */
 
-#ifndef ATOMUSVULKAN_VKTYPES_H
-#define ATOMUSVULKAN_VKTYPES_H
-
+#pragma once
 // Include lib
 
 #include <memory>
@@ -42,5 +40,3 @@
             abort();                                                     \
         }                                                                \
     } while (0)
-
-#endif //ATOMUSVULKAN_VKTYPES_H

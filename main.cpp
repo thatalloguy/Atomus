@@ -1,6 +1,6 @@
+#pragma once
 #include <iostream>
 #include "Renderer/VkEngine.h"
-
 
 int main() {
     VulkanEngine engine;

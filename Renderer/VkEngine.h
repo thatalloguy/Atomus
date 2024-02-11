@@ -8,17 +8,16 @@
 
 
 
-#ifndef ATOMUSVULKAN_VKENGINE_H
-#define ATOMUSVULKAN_VKENGINE_H
+#pragma once
 
+
+#include "VkTypes.h"
+
+#include "VkInitializers.hpp"
+#include <VkBootstrap.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
-#include "VkInitializers.hpp"
-#include "VkTypes.h"
-
-#include <VkBootstrap.h>
 
 #include <chrono>
 #include <thread>
@@ -98,4 +97,3 @@ class VulkanEngine {
 };
 
 
-#endif

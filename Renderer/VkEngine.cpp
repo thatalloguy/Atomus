@@ -5,6 +5,7 @@
 
 // Includes and stuff
 #include "VkEngine.h"
+#include "VkImages.h"
 
 constexpr bool bUseValidationLayers = false;
 
@@ -57,6 +58,11 @@ void VulkanEngine::CleanUp()
 
         for (int i=0; i < FRAME_OVERLAP; i++) {
             vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
+
+            // destroy sync objects
+            vkDestroyFence(_device, _frames[i]._renderFence, nullptr);
+            vkDestroySemaphore(_device, _frames[i]._renderSemaphore, nullptr);
+            vkDestroySemaphore(_device, _frames[i]._swapchainSemaphore, nullptr);
         }
 
 
@@ -85,6 +91,64 @@ void VulkanEngine::Draw()
     // get the image from the swapchain
     uint32_t swapchainImageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, 1000000000, getCurrentFrame()._swapchainSemaphore, nullptr, &swapchainImageIndex));
+
+    VkCommandBuffer cmd = getCurrentFrame()._mainCommandBuffer;
+
+    VK_CHECK(vkResetCommandBuffer(cmd, 0));
+
+    VkCommandBufferBeginInfo cmdBeginInfo = VkInit::commandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+    VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+
+    // make the swapchain image into write mode before rendering
+    VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+    // Clear color from the frame number
+    VkClearColorValue clearValue;
+    float flash = abs(sin(_frameNumber / 120.f));
+    clearValue = { {0.0f, 0.0f, flash, 1.0f} };
+
+    VkImageSubresourceRange clearRange = VkInit::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+
+    // actually clear the image
+    vkCmdClearColorImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1,&clearRange);
+
+    // make the swapchain image into the presentable mode
+    VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+    VK_CHECK(vkEndCommandBuffer(cmd));
+
+
+    //prepare the submit to queue
+    // wait on _presentSemaphore. and _renderSemaphore
+
+    VkCommandBufferSubmitInfo cmdInfo = VkInit::commandBufferSubmitInfo(cmd);
+
+    VkSemaphoreSubmitInfo waitInfo = VkInit::semaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, getCurrentFrame()._swapchainSemaphore);
+    VkSemaphoreSubmitInfo signalInfo = VkInit::semaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, getCurrentFrame()._renderSemaphore);
+
+    VkSubmitInfo2 submit = VkInit::submitInfo(&cmdInfo, &signalInfo, &waitInfo);
+
+    // submit the cmdbuffer to the queue and execute it
+
+    VK_CHECK(vkQueueSubmit2(_graphicsQueue, 1, &submit, getCurrentFrame()._renderFence));
+
+
+    // prepare present
+    // this will put the image to the visible window
+
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.pNext = nullptr;
+    presentInfo.pSwapchains = &_swapchain;
+    presentInfo.swapchainCount = 1;
+
+    presentInfo.pWaitSemaphores = &getCurrentFrame()._renderSemaphore;
+    presentInfo.waitSemaphoreCount = 1;
+
+    VK_CHECK(vkQueuePresentKHR(_graphicsQueue, &presentInfo));
+
+    _frameNumber++;
 
 }
 

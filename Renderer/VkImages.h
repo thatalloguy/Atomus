@@ -7,13 +7,12 @@
  * This will contain image related vulkan helpers
  */
 
-#ifndef ATOMUSVULKAN_VKIMAGES_H
-#define ATOMUSVULKAN_VKIMAGES_H
+#pragma once
 
+#include <vulkan/vulkan.h>
 
-class VkImages {
+namespace VkUtil {
 
-};
+    void transitionImage(VkCommandBuffer cmd, VkImage image, VkImageLayout currentLayout, VkImageLayout newLayout);
 
-
-#endif //ATOMUSVULKAN_VKIMAGES_H
+}
