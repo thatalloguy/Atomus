@@ -258,6 +258,42 @@ void VulkanEngine::initVulkan() {
 
 void VulkanEngine::initSwapchain() {
     createSwapchain(_windowExtent.width, _windowExtent.height);
+
+    // draw image size will match the window :)
+
+    VkExtent3D drawImageExtent = {
+            _windowExtent.width,
+            _windowExtent.height,
+            1
+    };
+
+    // draw format is hardcoded to 32 bit float
+    _drawImage.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+    _drawImage.imageExtent = drawImageExtent;
+
+    VkImageUsageFlags  drawImageUsages{};
+    drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
+    drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    VkImageCreateInfo rimgInfo = VkInit::imageCreateInfo(_drawImage.imageFormat, drawImageUsages, drawImageExtent);
+
+    VmaAllocationCreateInfo rimgAllocInfo = {};
+    rimgAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    rimgAllocInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    vmaCreateImage(_allocator, &rimgInfo, &rimgAllocInfo, &_drawImage.image, &_drawImage.allocation, nullptr);
+
+    VkImageViewCreateInfo rviewInfo = VkInit::imageViewCreateInfo(_drawImage.imageFormat, _drawImage.image, VK_IMAGE_ASPECT_COLOR_BIT);
+
+    VK_CHECK(vkCreateImageView(_device, &rviewInfo, nullptr, &_drawImage.imageView));
+
+    _mainDeletionQueue.pushFunction([=]() {
+        vkDestroyImageView(_device, _drawImage.imageView, nullptr);
+        vmaDestroyImage(_allocator, _drawImage.image, _drawImage.allocation);
+    });
+
 }
 
 void VulkanEngine::initCommands() {
