@@ -24,6 +24,7 @@ struct FrameData {
     VkSemaphore _swapchainSemaphore, _renderSemaphore;
     VkFence _renderFence;
 
+    DeletionQueue _deletionQueue;
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;
@@ -66,13 +67,11 @@ class VulkanEngine {
         uint32_t _graphicsQueueFamily;
 
 
-
-
-        // -_-
-        static VulkanEngine& Get();
-
+        DeletionQueue _mainDeletionQueue;
+        VmaAllocator _allocator;
 
         // Life-time functions
+        static VulkanEngine& Get();
 
         void Init();
         void CleanUp();

@@ -7,6 +7,9 @@
 #include "VkEngine.h"
 #include "VkImages.h"
 
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.h>
+
 constexpr bool bUseValidationLayers = true;
 
 VulkanEngine* loadedEngine = nullptr;
@@ -55,6 +58,7 @@ void VulkanEngine::CleanUp()
     if (_isInitialized) {
         spdlog::info("Destroying current loaded engine");
         vkDeviceWaitIdle(_device);
+        _mainDeletionQueue.flush();
 
         for (int i=0; i < FRAME_OVERLAP; i++) {
             vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
@@ -76,6 +80,7 @@ void VulkanEngine::CleanUp()
         vkDestroyInstance(_instance, nullptr);
         glfwDestroyWindow(_window);
         glfwTerminate();
+        spdlog::info("Successfully destroyed current loaded engine");
     }
 
     // clear engine pointer
@@ -86,6 +91,10 @@ void VulkanEngine::Draw()
 {
     // wait until the gpu has finished rendering the last frame
     VK_CHECK(vkWaitForFences(_device, 1, &getCurrentFrame()._renderFence, true, 1000000000));
+
+    //Flush the current Frame deletion Que
+    getCurrentFrame()._deletionQueue.flush();
+
     VK_CHECK(vkResetFences(_device, 1, &getCurrentFrame()._renderFence));
 
     // get the image from the swapchain
@@ -234,6 +243,17 @@ void VulkanEngine::initVulkan() {
     _graphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
     _graphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 
+    // Initialize the memory allocator
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.physicalDevice = _chosenGPU;
+    allocatorInfo.device = _device;
+    allocatorInfo.instance = _instance;
+    allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+    vmaCreateAllocator(&allocatorInfo, &_allocator);
+
+    _mainDeletionQueue.pushFunction([&]() {
+        vmaDestroyAllocator(_allocator);
+    });
 }
 
 void VulkanEngine::initSwapchain() {
