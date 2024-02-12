@@ -84,7 +84,6 @@ void VulkanEngine::CleanUp()
 
 void VulkanEngine::Draw()
 {
-    spdlog::info("atleast i got here :)");
     // wait until the gpu has finished rendering the last frame
     VK_CHECK(vkWaitForFences(_device, 1, &getCurrentFrame()._renderFence, true, 1000000000));
     VK_CHECK(vkResetFences(_device, 1, &getCurrentFrame()._renderFence));
@@ -107,7 +106,7 @@ void VulkanEngine::Draw()
     // Clear color from the frame number
     VkClearColorValue clearValue;
     float flash = abs(sin(_frameNumber / 120.f));
-    clearValue = { {0.0f, 0.0f, flash, 1.0f} };
+    clearValue = { {flash, 0.0f, 0.0f, 1.0f} };
 
     VkImageSubresourceRange clearRange = VkInit::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
 
