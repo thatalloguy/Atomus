@@ -70,6 +70,10 @@ class VulkanEngine {
         DeletionQueue _mainDeletionQueue;
         VmaAllocator _allocator;
 
+        // draw resources
+        AllocatedImage _drawImage;
+        VkExtent2D _drawExtent;
+
         // Life-time functions
         static VulkanEngine& Get();
 

@@ -20,7 +20,6 @@ namespace VkInit {
     VkCommandBufferAllocateInfo commandBufferAllocateInfo(VkCommandPool pool, uint32_t count /*= 1*/);
 
     VkFenceCreateInfo fenceCreateInfo(VkFenceCreateFlags flags /*= 0*/);
-    // I hope setting this to 0 doenst come and bite me in the ass later on :)
     VkSemaphoreCreateInfo semaphoreCreateInfo(VkSemaphoreCreateFlags flags = 0);
 
     VkCommandBufferBeginInfo commandBufferBeginInfo(VkCommandBufferUsageFlags flags /*= 0*/);
@@ -29,5 +28,8 @@ namespace VkInit {
     VkSemaphoreSubmitInfo semaphoreSubmitInfo(VkPipelineStageFlags2 stageMask, VkSemaphore semaphore);
     VkCommandBufferSubmitInfo commandBufferSubmitInfo(VkCommandBuffer cmd);
     VkSubmitInfo2 submitInfo(VkCommandBufferSubmitInfo* cmd, VkSemaphoreSubmitInfo* signalSemaphoreInfo, VkSemaphoreSubmitInfo* waitSemaphoreInfo);
+
+    VkImageCreateInfo imageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
+    VkImageViewCreateInfo imageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags  aspectFlags);
 }
 
