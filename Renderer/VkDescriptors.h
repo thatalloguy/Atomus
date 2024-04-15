@@ -11,6 +11,17 @@
 #ifndef ATOMUSVULKAN_VKDESCRIPTORS_H
 #define ATOMUSVULKAN_VKDESCRIPTORS_H
 
+#include "VkTypes.h"
+
+struct DescriptorLayoutBuilder {
+
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+
+    void addBinding(uint32_t binding, VkDescriptorType type);
+    void clear();
+
+    VkDescriptorSetLayout build(VkDevice device, VkShaderStageFlags shaderStages);
+};
 
 class VkDescriptors {
 
