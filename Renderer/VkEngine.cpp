@@ -107,25 +107,42 @@ void VulkanEngine::Draw()
 
     VkCommandBufferBeginInfo cmdBeginInfo = VkInit::commandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
+    _drawExtent.width = _drawImage.imageExtent.width;
+    _drawExtent.height = _drawImage.imageExtent.height;
+
+    VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+
+    // transform our main image into a general one (for writing).
+    // overwite it all since we dont care what the old layout was :shrug:
+    VkUtil::transitionImage(cmd, _drawImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+    drawBackground(cmd);
+
+    //Transition the draw image (and swapchain image) into the correct transfer layours
+    VkUtil::transitionImage(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    VkUtil::copyImageToImage(cmd, _drawImage.image, _swapchainImages[swapchainImageIndex],  _drawExtent, _swapchainExtent);
+
+    //Set the swapchain layout for screen stuff :)
+    VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+    VK_CHECK(vkEndCommandBuffer(cmd));
+
+/*
+
     VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
     // make the swapchain image into write mode before rendering
     VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
     // Clear color from the frame number
-    VkClearColorValue clearValue;
-    float flash = abs(sin(_frameNumber / 120.f));
-    clearValue = { {flash, 0.0f, 0.0f, 1.0f} };
-
-    VkImageSubresourceRange clearRange = VkInit::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
-
-    // actually clear the image
-    vkCmdClearColorImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1,&clearRange);
-
+    drawBackground(cmd);
     // make the swapchain image into the presentable mode
     VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     VK_CHECK(vkEndCommandBuffer(cmd));
+*/
 
 
     //prepare the submit to queue
@@ -187,6 +204,21 @@ void VulkanEngine::Run()
             Draw();
         }
 }
+
+
+
+void VulkanEngine::drawBackground(VkCommandBuffer cmd) {
+    VkClearColorValue clearValue;
+    float flash = abs(sin(_frameNumber / 120.f));
+    clearValue = { {flash, 0.0f, 0.0f, 1.0f} };
+
+    VkImageSubresourceRange clearRange = VkInit::imageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
+
+    // actually clear the image
+    vkCmdClearColorImage(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1,&clearRange);
+
+}
+
 
 
 

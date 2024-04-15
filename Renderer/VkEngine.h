@@ -88,6 +88,8 @@ class VulkanEngine {
         void initCommands();
         void initSyncStructures();
 
+        void drawBackground(VkCommandBuffer cmd);
+
         // swapchain lifetime functions
         void createSwapchain(uint32_t width, uint32_t height);
         void destroySwapchain();
