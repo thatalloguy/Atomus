@@ -9,7 +9,7 @@ My personal vulkan renderer
 - [x] MainLoop
 - [x] Improve render loop
 -
-- [ ] Shaders.
+- [x] Shaders.
 - [ ] Setup imgui.
 - [ ] Push Constants and new shaders.
 -
