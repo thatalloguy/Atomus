@@ -31,5 +31,11 @@ namespace VkInit {
 
     VkImageCreateInfo imageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
     VkImageViewCreateInfo imageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags  aspectFlags);
+
+    VkRenderingAttachmentInfo attachmentInfo(VkImageView view, VkClearValue* clear, VkImageLayout layout);
+
+    ///NOTE custom function i couldnt find vkguide's one.
+    VkRenderingInfo renderingInfo(VkExtent2D renderExtent, VkRenderingAttachmentInfo* colorAttachment,
+                                  VkRenderingAttachmentInfo* depthAttachment);
 }
 

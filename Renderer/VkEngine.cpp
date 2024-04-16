@@ -11,6 +11,12 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
+
+// Imgui includes
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+
 constexpr bool bUseValidationLayers = true;
 
 VulkanEngine* loadedEngine = nullptr;
@@ -55,6 +61,8 @@ void VulkanEngine::Init() {
 
         initPipelines();
 
+        initImGui();
+
 
         _isInitialized = true;
     }
@@ -69,6 +77,7 @@ void VulkanEngine::initDescriptors() {
     globalDescriptorAllocator.initPool(_device, 10, sizes);
 
     {
+        ///TODO correctly destroy this obj.
         DescriptorLayoutBuilder builder;
         builder.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
         _drawImageDescriptorLayout = builder.build(_device, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -168,26 +177,16 @@ void VulkanEngine::Draw()
 
     VkUtil::copyImageToImage(cmd, _drawImage.image, _swapchainImages[swapchainImageIndex],  _drawExtent, _swapchainExtent);
 
-    //Set the swapchain layout for screen stuff :)
-    VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    //Set the swapchain layout for imgui stuff :)
+    VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    //draw imgui into the swapchain img
+    drawImgui(cmd, _swapchainImageViews[swapchainImageIndex]);
+
+    // set the swapchain image layout to present
+    VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     VK_CHECK(vkEndCommandBuffer(cmd));
-
-/*
-
-    VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
-
-    // make the swapchain image into write mode before rendering
-    VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-    // Clear color from the frame number
-    drawBackground(cmd);
-    // make the swapchain image into the presentable mode
-    VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-    VK_CHECK(vkEndCommandBuffer(cmd));
-*/
-
 
     //prepare the submit to queue
     // wait on _presentSemaphore. and _renderSemaphore
@@ -244,6 +243,16 @@ void VulkanEngine::Run()
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
+
+            // Imgui
+            ImGui_ImplVulkan_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+
+            ImGui::ShowDemoWindow();
+
+            ImGui::Render();
 
             Draw();
         }
@@ -397,6 +406,19 @@ void VulkanEngine::initCommands() {
         VK_CHECK(vkAllocateCommandBuffers(_device, &cmdAllocInfo, &_frames[i]._mainCommandBuffer));
     }
 
+
+    VK_CHECK(vkCreateCommandPool(_device, &commandPoolInfo, nullptr, &_immCommandPool));
+
+    //alloc the cmd buf for immediate submits
+
+    VkCommandBufferAllocateInfo cmdAllocInfo = VkInit::commandBufferAllocateInfo(_immCommandPool, 1);
+
+    VK_CHECK(vkAllocateCommandBuffers(_device, &cmdAllocInfo, &_immCommandBuffer));
+
+    _mainDeletionQueue.pushFunction([=]() {
+        vkDestroyCommandPool(_device, _immCommandPool, nullptr);
+    });
+
 }
 
 void VulkanEngine::initSyncStructures() {
@@ -414,6 +436,10 @@ void VulkanEngine::initSyncStructures() {
         VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr, &_frames[i]._swapchainSemaphore));
         VK_CHECK(vkCreateSemaphore(_device, &semaphoreCreateInfo, nullptr, &_frames[i]._renderSemaphore));
     }
+
+
+    VK_CHECK(vkCreateFence(_device, &fenceCreateInfo, nullptr, &_immFence));
+    _mainDeletionQueue.pushFunction([=]() { vkDestroyFence(_device, _immFence, nullptr); });
 }
 
 void VulkanEngine::createSwapchain(uint32_t width, uint32_t height) {
@@ -488,3 +514,102 @@ void VulkanEngine::initBackgroundPipelines() {
         vkDestroyPipeline(_device, _gradientPipeline, nullptr);
     });
 }
+
+void VulkanEngine::immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function) {
+
+    VK_CHECK(vkResetFences(_device, 1, &_immFence));
+    VK_CHECK(vkResetCommandBuffer(_immCommandBuffer, 0));
+
+
+    VkCommandBuffer cmd = _immCommandBuffer;
+
+    VkCommandBufferBeginInfo cmdBeginInfo = VkInit::commandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+    VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+
+    function(cmd);
+
+    VK_CHECK(vkEndCommandBuffer(cmd));
+
+    VkCommandBufferSubmitInfo cmdInfo = VkInit::commandBufferSubmitInfo(cmd);
+    VkSubmitInfo2 submit = VkInit::submitInfo(&cmdInfo, nullptr, nullptr);
+
+    // submit cmd buf to the queue and execute it.
+    // _renderFence will now block until the commands finish.
+    VK_CHECK(vkQueueSubmit2(_graphicsQueue, 1, &submit, _immFence));
+
+    VK_CHECK(vkWaitForFences(_device, 1, &_immFence, true, 9999999999));
+
+}
+
+void VulkanEngine::initImGui() {
+    // create descriptor pool for imgui
+
+    // NOTE the pool is very oversize, but its copied from the imgui demo.
+
+    VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+                                          { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+                                          { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+                                          { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+                                          { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+                                          { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+                                          { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+                                          { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+                                          { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+                                          { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+                                          { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
+
+    VkDescriptorPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolInfo.maxSets = 1000;
+    poolInfo.poolSizeCount = (uint32_t)std::size(pool_sizes);
+    poolInfo.pPoolSizes = pool_sizes;
+
+    VkDescriptorPool imguiPool;
+    VK_CHECK(vkCreateDescriptorPool(_device, &poolInfo, nullptr, &imguiPool));
+
+
+    // Initialize Imgui.
+
+    ImGui::CreateContext();
+
+    ///NOTE i have no idea if this should be true or false ;-;
+    ImGui_ImplGlfw_InitForVulkan(_window, true);
+
+    ImGui_ImplVulkan_InitInfo initInfo = {};
+    initInfo.Instance = _instance;
+    initInfo.PhysicalDevice = _chosenGPU;
+    initInfo.Device = _device;
+    initInfo.Queue = _graphicsQueue;
+    initInfo.DescriptorPool = imguiPool;
+    initInfo.MinImageCount = 3;
+    initInfo.ImageCount = 3;
+    initInfo.UseDynamicRendering = true;
+    initInfo.ColorAttachmentFormat = _swapchainImageFormat;
+
+    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+    ImGui_ImplVulkan_Init(&initInfo, VK_NULL_HANDLE);
+
+    ///NOTE the vkguide passes cmd here, but in the version im using its not needed???
+    immediate_submit([&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
+
+    ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+    _mainDeletionQueue.pushFunction([=]() {
+        vkDestroyDescriptorPool(_device, imguiPool, nullptr);
+        ImGui_ImplVulkan_Shutdown();
+    });
+}
+
+void VulkanEngine::drawImgui(VkCommandBuffer cmd, VkImageView targetImageView) {
+    VkRenderingAttachmentInfo colorAttachment = VkInit::attachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
+    VkRenderingInfo renderInfo = VkInit::renderingInfo(_swapchainExtent, &colorAttachment, nullptr);
+
+    vkCmdBeginRendering(cmd, &renderInfo);
+
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+
+    vkCmdEndRendering(cmd);
+};

@@ -87,6 +87,14 @@ class VulkanEngine {
         VkPipelineLayout _gradientPipelineLayout;
 
 
+        //ImGui impl
+        VkFence _immFence;
+        VkCommandBuffer _immCommandBuffer;
+        VkCommandPool _immCommandPool;
+
+        void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
+
+
         // Life-time functions
         static VulkanEngine& Get();
 
@@ -112,6 +120,8 @@ class VulkanEngine {
         void initPipelines();
         void initBackgroundPipelines();
 
+        void initImGui();
+        void drawImgui(VkCommandBuffer cmd, VkImageView targetImageView);
 };
 
 
