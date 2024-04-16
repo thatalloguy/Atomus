@@ -18,7 +18,8 @@
 
 namespace VkUtil {
     bool loadShaderModule(const char* filePath,
-                          VkDevice)
+                          VkDevice device,
+                          VkShaderModule* outShaderModule);
 }
 
 class VkPipelines {
