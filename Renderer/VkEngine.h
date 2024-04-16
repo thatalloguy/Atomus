@@ -142,6 +142,12 @@ class VulkanEngine {
 
         std::vector<ComputeEffect> backgroundEffects;
         int currentBackgroundEffect{0};
+
+        VkPipelineLayout _trianglePipelineLayout;
+        VkPipeline _trianglePipeline;
+
+        void initTrianglePipeline();
+        void drawGeometry(VkCommandBuffer cmd);
 };
 
 

@@ -38,6 +38,9 @@ namespace VkInit {
     VkRenderingInfo renderingInfo(VkExtent2D renderExtent, VkRenderingAttachmentInfo* colorAttachment,
                                   VkRenderingAttachmentInfo* depthAttachment);
 
-    VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char * entry);
+    VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char * entry = "main");
+
+    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo();
+
 }
 

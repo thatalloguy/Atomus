@@ -13,7 +13,7 @@ My personal vulkan renderer
 - [x] Setup imgui.
 - [x] Push Constants and new shaders.
 -
-- [ ] Set up the render pipeline
+- [x] Set up the render pipeline
 - [ ] Mesh Buffers
 - [ ] Mesh loading
 - [ ] Blending

@@ -129,11 +129,11 @@ void PipelineBuilder::setShaders(VkShaderModule vertexShader, VkShaderModule fra
     _shaderStages.clear();
 
     _shaderStages.push_back(
-                VkInit::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertexShader, "vertex")
+                VkInit::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertexShader)
     );
 
     _shaderStages.push_back(
-            VkInit::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader, "fragment")
+            VkInit::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader)
     );
 }
 
@@ -188,6 +188,11 @@ void PipelineBuilder::disableDepthtest() {
     _depthStencil.back = {};
     _depthStencil.minDepthBounds = 0.f;
     _depthStencil.maxDepthBounds= 1.f;
+}
+
+void PipelineBuilder::setCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace) {
+    _rasterizer.cullMode = cullMode;
+    _rasterizer.frontFace = frontFace;
 }
 
 
