@@ -12,6 +12,8 @@
 
 #include "VkInitializers.h"
 #include "VkTypes.h"
+#include "VkDescriptors.h"
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -74,6 +76,12 @@ class VulkanEngine {
         AllocatedImage _drawImage;
         VkExtent2D _drawExtent;
 
+        //Descriptor stuff ;-;
+        DescriptorAllocator globalDescriptorAllocator;
+
+        VkDescriptorSet _drawImageDescriptors;
+        VkDescriptorSetLayout _drawImageDescriptorLayout;
+
         // Life-time functions
         static VulkanEngine& Get();
 
@@ -93,6 +101,8 @@ class VulkanEngine {
         // swapchain lifetime functions
         void createSwapchain(uint32_t width, uint32_t height);
         void destroySwapchain();
+
+        void initDescriptors();
 };
 
 
