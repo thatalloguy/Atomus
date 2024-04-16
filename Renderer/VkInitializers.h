@@ -37,5 +37,7 @@ namespace VkInit {
     ///NOTE custom function i couldnt find vkguide's one.
     VkRenderingInfo renderingInfo(VkExtent2D renderExtent, VkRenderingAttachmentInfo* colorAttachment,
                                   VkRenderingAttachmentInfo* depthAttachment);
+
+    VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char * entry);
 }
 
