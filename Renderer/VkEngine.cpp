@@ -101,6 +101,10 @@ void VulkanEngine::initDescriptors() {
     drawImageWrite.pImageInfo = &imgInfo;
 
     vkUpdateDescriptorSets(_device, 1, &drawImageWrite, 0, nullptr);
+
+    _mainDeletionQueue.pushFunction([&]() {
+        vkDestroyDescriptorSetLayout(_device, _drawImageDescriptorLayout, nullptr);
+    });
 }
 
 
