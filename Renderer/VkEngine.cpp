@@ -6,6 +6,7 @@
 // Includes and stuff
 #include "VkEngine.h"
 #include "VkImages.h"
+#include "VkPipelines.h"
 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
@@ -51,6 +52,8 @@ void VulkanEngine::Init() {
         initSyncStructures();
 
         initDescriptors();
+
+        initPipelines();
 
 
         _isInitialized = true;
@@ -110,6 +113,8 @@ void VulkanEngine::CleanUp()
 
 
         destroySwapchain();
+
+        globalDescriptorAllocator.destroyPool(_device);
 
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
         vkDestroyDevice(_device, nullptr);
@@ -247,7 +252,7 @@ void VulkanEngine::Run()
 
 
 void VulkanEngine::drawBackground(VkCommandBuffer cmd) {
-    VkClearColorValue clearValue;
+    /*VkClearColorValue clearValue;
     float flash = abs(sin(_frameNumber / 120.f));
     clearValue = { {flash, 0.0f, 0.0f, 1.0f} };
 
@@ -255,6 +260,16 @@ void VulkanEngine::drawBackground(VkCommandBuffer cmd) {
 
     // actually clear the image
     vkCmdClearColorImage(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1,&clearRange);
+    */
+
+    // bind the gradient pipeline;
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _gradientPipeline);
+
+    // Bind the descriptor set with draw image for the compute pipeline
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _gradientPipelineLayout, 0, 1, &_drawImageDescriptors, 0, nullptr);
+
+    // make it a 16x16 workgroup.
+    vkCmdDispatch(cmd, std::ceil(_drawExtent.width / 16.0), std::ceil(_drawExtent.height / 16.0), 1);
 
 }
 
@@ -428,4 +443,48 @@ void VulkanEngine::destroySwapchain() {
     for (auto & _swapchainImageView : _swapchainImageViews) {
         vkDestroyImageView(_device, _swapchainImageView, nullptr);
     }
+}
+
+void VulkanEngine::initPipelines() {
+    initBackgroundPipelines();
+}
+
+void VulkanEngine::initBackgroundPipelines() {
+
+    VkPipelineLayoutCreateInfo computeLayout{};
+    computeLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    computeLayout.pNext = nullptr;
+    computeLayout.pSetLayouts = &_drawImageDescriptorLayout;
+    computeLayout.setLayoutCount = 1;
+
+    VK_CHECK(vkCreatePipelineLayout(_device, &computeLayout, nullptr, &_gradientPipelineLayout));
+
+    //layout Code
+    VkShaderModule computeDrawShader;
+    if (!VkUtil::loadShaderModule("gradient.spv", _device, &computeDrawShader)) {
+        spdlog::error("[ENGINE] Error with Loading shader");
+    }
+
+    VkPipelineShaderStageCreateInfo stageInfo{};
+    stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stageInfo.pNext = nullptr;
+    stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+    stageInfo.module = computeDrawShader;
+    stageInfo.pName = "main";
+
+    VkComputePipelineCreateInfo computePipelineCreateInfo{};
+    computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    computePipelineCreateInfo.pNext = nullptr;
+    computePipelineCreateInfo.layout = _gradientPipelineLayout;
+    computePipelineCreateInfo.stage = stageInfo;
+
+    VK_CHECK(vkCreateComputePipelines(_device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &_gradientPipeline));
+
+
+    vkDestroyShaderModule(_device, computeDrawShader, nullptr);
+
+    _mainDeletionQueue.pushFunction([&]() {
+        vkDestroyPipelineLayout(_device, _gradientPipelineLayout, nullptr);
+        vkDestroyPipeline(_device, _gradientPipeline, nullptr);
+    });
 }

@@ -38,9 +38,5 @@ struct DescriptorAllocator {
     VkDescriptorSet allocate(VkDevice device, VkDescriptorSetLayout layout);
 };
 
-class VkDescriptors {
-
-};
-
 
 #endif //ATOMUSVULKAN_VKDESCRIPTORS_H

@@ -82,6 +82,11 @@ class VulkanEngine {
         VkDescriptorSet _drawImageDescriptors;
         VkDescriptorSetLayout _drawImageDescriptorLayout;
 
+        //Pipeline :)
+        VkPipeline _gradientPipeline;
+        VkPipelineLayout _gradientPipelineLayout;
+
+
         // Life-time functions
         static VulkanEngine& Get();
 
@@ -103,6 +108,10 @@ class VulkanEngine {
         void destroySwapchain();
 
         void initDescriptors();
+
+        void initPipelines();
+        void initBackgroundPipelines();
+
 };
 
 
