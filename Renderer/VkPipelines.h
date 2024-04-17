@@ -52,6 +52,8 @@ public:
     void setDepthFormat(VkFormat format);
     void disableDepthtest();
     void enableDepthtest(bool depthWriteEnable, VkCompareOp op);
+    void enableBlendingAdditive();
+    void enableBlendingAlphablend();
 
     VkPipeline buildPipeline(VkDevice device);
 

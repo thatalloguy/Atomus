@@ -1,6 +1,8 @@
 #version 450
 #extension GL_EXT_buffer_reference : require
 
+///TODO blending?
+
 layout (location = 0) out vec3 outColor;
 layout (location = 1) out vec2 outUV;
 
