@@ -14,7 +14,7 @@ My personal vulkan renderer
 - [x] Push Constants and new shaders.
 -
 - [x] Set up the render pipeline
-- [ ] Mesh Buffers
+- [x] Mesh Buffers
 - [ ] Mesh loading
 - [ ] Blending
 - [ ] Window Resizing
