@@ -13,6 +13,7 @@
 #include "VkInitializers.h"
 #include "VkTypes.h"
 #include "VkDescriptors.h"
+#include "VkLoader.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -91,6 +92,7 @@ class VulkanEngine {
 
         // draw resources
         AllocatedImage _drawImage;
+        AllocatedImage _depthImage;
         VkExtent2D _drawExtent;
 
         //Descriptor stuff ;-;
@@ -163,6 +165,8 @@ class VulkanEngine {
         void initMeshPipeline();
 
         //temp?
+
+       std::vector<std::shared_ptr<MeshAsset>> testMeshes;
         void initDefaultData();
 };
 

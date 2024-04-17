@@ -45,7 +45,7 @@
 #pragma warning(disable : 4514) // unreferenced inline function has been removed
 #endif
 
-#include <simdjson.h>
+#include "../deps/simdjson/simdjson.h"
 
 #ifdef SIMDJSON_TARGET_VERSION
 // Make sure that SIMDJSON_TARGET_VERSION is equal to SIMDJSON_VERSION.

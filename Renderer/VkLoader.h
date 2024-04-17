@@ -8,14 +8,41 @@
  * Will contain GLTF loading logic
  */
 
-#ifndef ATOMUSVULKAN_VKLOADER_H
-#define ATOMUSVULKAN_VKLOADER_H
+#pragma once
+
+#include "VkTypes.h"
+#include <unordered_map>
+#include <filesystem>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
+#include <fastgltf/glm_element_traits.hpp>
+#include <fastgltf/tools.hpp>
+#include <fastgltf/core.hpp>
+#include <fastgltf/util.hpp>
 
 
 
-class VkLoader {
-
+struct GeoSurface {
+    uint32_t startIndex;
+    uint32_t count;
 };
 
 
-#endif //ATOMUSVULKAN_VKLOADER_H
+struct MeshAsset {
+    std::string name;
+
+    std::vector<GeoSurface> surfaces;
+    GPUMeshBuffers meshBuffers;
+};
+
+
+class VulkanEngine;
+
+
+namespace VkLoader {
+
+    std::optional<std::vector<std::shared_ptr<MeshAsset>>>
+    loadGltfMeshes(VulkanEngine *engine, std::filesystem::path filePath);
+
+}

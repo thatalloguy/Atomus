@@ -29,7 +29,12 @@ file(GLOB_RECURSE IMGUI_SOURCE
         Thirdparty/imgui/backends/imgui_impl_glfw.cpp
 )
 
-add_executable(AtomusVulkan ${IMGUI_SOURCE} main.cpp
+file(GLOB_RECURSE FASTGLTF_DEPS
+        Thirdparty/fastgltf/deps/simdjson/simdjson.h
+        Thirdparty/fastgltf/deps/simdjson/simdjson.cpp
+)
+
+add_executable(AtomusVulkan ${IMGUI_SOURCE} ${FASTGLTF_DEPS} main.cpp
         # Engine related files
         Renderer/VkEngine.cpp
         Renderer/VkEngine.h
