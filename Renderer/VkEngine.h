@@ -111,6 +111,11 @@ class VulkanEngine {
 
         void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
 
+        AllocatedBuffer createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+        void  destroyBuffer(const AllocatedBuffer& buffer);
+
+        GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
+
 
         // Life-time functions
         static VulkanEngine& Get();
@@ -149,8 +154,16 @@ class VulkanEngine {
         void initTrianglePipeline();
         void drawGeometry(VkCommandBuffer cmd);
 
-        AllocatedBuffer createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
-        void  destroyBuffer(const AllocatedBuffer& buffer);
+
+        VkPipelineLayout _meshPipelineLayout;
+        VkPipeline _meshPipeline;
+
+        GPUMeshBuffers rectangle;
+
+        void initMeshPipeline();
+
+        //temp?
+        void initDefaultData();
 };
 
 
