@@ -15,7 +15,7 @@ My personal vulkan renderer
 -
 - [x] Set up the render pipeline
 - [x] Mesh Buffers
-- [ ] Mesh loading
+- [x] Mesh loading
 - [ ] Blending
 - [ ] Window Resizing
 -
