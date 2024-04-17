@@ -741,7 +741,6 @@ void VulkanEngine::initTrianglePipeline() {
 }
 
 void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
-    spdlog::info("Drawing GEOMT!");
     //begin a render pass  connected to our draw image
     VkRenderingAttachmentInfo colorAttachment = VkInit::attachmentInfo(_drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
 
@@ -774,6 +773,7 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
 
     // PLEASE WORK I BEG YOOOOUUUU
+
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipeline);
 
     GPUDrawPushConstants push_constants;
@@ -790,24 +790,23 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 }
 
 AllocatedBuffer VulkanEngine::createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
-
-    //Allocate buffer
-    VkBufferCreateInfo bufferInfo = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    // allocate buffer
+    VkBufferCreateInfo bufferInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     bufferInfo.pNext = nullptr;
     bufferInfo.size = allocSize;
 
     bufferInfo.usage = usage;
 
-    VmaAllocationCreateInfo vmaAllocInfo = {};
-    vmaAllocInfo.usage = memoryUsage;
-    vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    VmaAllocationCreateInfo vmaallocInfo = {};
+    vmaallocInfo.usage = memoryUsage;
+    vmaallocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
     AllocatedBuffer newBuffer;
 
-    VK_CHECK(vmaCreateBuffer(_allocator, &bufferInfo, &vmaAllocInfo, &newBuffer.buffer, &newBuffer.allocation, &newBuffer.info));
-
+    // allocate the buffer
+    VK_CHECK(vmaCreateBuffer(_allocator, &bufferInfo, &vmaallocInfo, &newBuffer.buffer, &newBuffer.allocation,
+                             &newBuffer.info));
 
     return newBuffer;
-    spdlog::info("creating buffer!");
 }
 
 void VulkanEngine::destroyBuffer(const AllocatedBuffer& buffer) {
@@ -821,63 +820,68 @@ GPUMeshBuffers VulkanEngine::uploadMesh(std::span<uint32_t> indices, std::span<V
 
     GPUMeshBuffers newSurface;
 
-    newSurface.vertexBuffer = createBuffer(vertexBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |  VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                           VMA_MEMORY_USAGE_GPU_ONLY);
+    //create vertex buffer
+    newSurface.vertexBuffer = createBuffer(vertexBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                            VMA_MEMORY_USAGE_GPU_ONLY);
 
-    VkBufferDeviceAddressInfo deviceAddressInfo{};
-    deviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-    deviceAddressInfo.buffer = newSurface.vertexBuffer.buffer;
-    newSurface.vertexBufferAddress = vkGetBufferDeviceAddress(_device, &deviceAddressInfo);
+    //find the adress of the vertex buffer
+    VkBufferDeviceAddressInfo deviceAdressInfo{ .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,.buffer = newSurface.vertexBuffer.buffer };
+    newSurface.vertexBufferAddress = vkGetBufferDeviceAddress(_device, &deviceAdressInfo);
 
     //create index buffer
     newSurface.indexBuffer = createBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                          VMA_MEMORY_USAGE_GPU_ONLY);
+                                           VMA_MEMORY_USAGE_GPU_ONLY);
+
+
+
+
 
     AllocatedBuffer staging = createBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
     void* data = staging.allocation->GetMappedData();
 
-    //copy vertex buffer
+    // copy vertex buffer
     memcpy(data, vertices.data(), vertexBufferSize);
-    //copy index buffer
+    // copy index buffer
     memcpy((char*)data + vertexBufferSize, indices.data(), indexBufferSize);
 
     immediate_submit([&](VkCommandBuffer cmd) {
-       VkBufferCopy vertexCopy{ 0 };
-       vertexCopy.dstOffset = 0;
-       vertexCopy.srcOffset = 0;
-       vertexCopy.size = vertexBufferSize;
+        VkBufferCopy vertexCopy{ 0 };
+        vertexCopy.dstOffset = 0;
+        vertexCopy.srcOffset = 0;
+        vertexCopy.size = vertexBufferSize;
 
-       vkCmdCopyBuffer(cmd, staging.buffer, newSurface.vertexBuffer.buffer, 1, &vertexCopy);
+        vkCmdCopyBuffer(cmd, staging.buffer, newSurface.vertexBuffer.buffer, 1, &vertexCopy);
 
-       VkBufferCopy indexCopy{ 0 };
-       indexCopy.dstOffset = 0;
-       indexCopy.size = vertexBufferSize;
-       indexCopy.size = indexBufferSize;
+        VkBufferCopy indexCopy{ 0 };
+        indexCopy.dstOffset = 0;
+        indexCopy.srcOffset = vertexBufferSize;
+        indexCopy.size = indexBufferSize;
 
-       vkCmdCopyBuffer(cmd, staging.buffer, newSurface.indexBuffer.buffer, 1, &indexCopy);
+        vkCmdCopyBuffer(cmd, staging.buffer, newSurface.indexBuffer.buffer, 1, &indexCopy);
     });
 
     destroyBuffer(staging);
 
     return newSurface;
-    spdlog::info("Uploaded the mesh!");
 }
 
 void VulkanEngine::initMeshPipeline() {
     spdlog::info("GOT TO INIT MESH pipeline");
     VkShaderModule triangleFragShader;
     if (!VkUtil::loadShaderModule("colored_triangle.frag.spv", _device, &triangleFragShader)) {
-        spdlog::error("[Engine] error loading the triangle frag shader");
-    } else {
-        spdlog::info("[Engine] loaded the triangle frag shader");
+        spdlog::error("Error when building the triangle fragment shader module");
+    }
+    else {
+        spdlog::info("Triangle fragment shader succesfully loaded");
     }
 
     VkShaderModule triangleVertexShader;
     if (!VkUtil::loadShaderModule("colored_triangle_mesh.vert.spv", _device, &triangleVertexShader)) {
-        spdlog::error("[Engine] error loading the triangle vertex shader");
-    } else {
-        spdlog::info("[Engine] loaded the triangle vert shader");
+        spdlog::error("Error when building the triangle vertex shader module");
+    }
+    else {
+        spdlog::info("Triangle vertex shader succesfully loaded");
     }
 
     VkPushConstantRange bufferRange{};
@@ -890,7 +894,6 @@ void VulkanEngine::initMeshPipeline() {
     pipeline_layout_info.pushConstantRangeCount = 1;
 
     VK_CHECK(vkCreatePipelineLayout(_device, &pipeline_layout_info, nullptr, &_meshPipelineLayout));
-
 
     PipelineBuilder pipelineBuilder;
 
@@ -917,6 +920,7 @@ void VulkanEngine::initMeshPipeline() {
 
     //finally build the pipeline
     _meshPipeline = pipelineBuilder.buildPipeline(_device);
+
 
     //clean structures
     vkDestroyShaderModule(_device, triangleFragShader, nullptr);
@@ -955,5 +959,9 @@ void VulkanEngine::initDefaultData() {
 
     // just a simple rectangle for testing
     rectangle = uploadMesh(rect_indices,rect_vertices);
+    _mainDeletionQueue.pushFunction([&]() {
+        destroyBuffer(rectangle.vertexBuffer);
+        destroyBuffer(rectangle.indexBuffer);
+    });
     spdlog::info("Done with default data");
 }
