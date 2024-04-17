@@ -148,6 +148,9 @@ class VulkanEngine {
 
         void initTrianglePipeline();
         void drawGeometry(VkCommandBuffer cmd);
+
+        AllocatedBuffer createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+        void  destroyBuffer(const AllocatedBuffer& buffer);
 };
 
 

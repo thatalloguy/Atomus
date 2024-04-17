@@ -37,6 +37,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
+struct AllocatedBuffer {
+    VkBuffer buffer;
+    VmaAllocation allocation;
+    VmaAllocationInfo info;
+};
 
 struct DeletionQueue {
     std::deque<std::function<void()>> deletors;
