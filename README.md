@@ -20,7 +20,7 @@ My personal vulkan renderer
 - [x] Window Resizing
 -
 - [x] Descriptors Abstractions
-- [ ] Textures
+- [x] Textures
 - [ ] Engine Architecture
 - [ ] Materials
 - [ ] Meshes & camera
