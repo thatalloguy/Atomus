@@ -90,6 +90,15 @@ void VulkanEngine::initDescriptors() {
         });
     }
 
+    {
+        DescriptorLayoutBuilder builder;
+        builder.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        _singleImageDescriptorLayout = builder.build(_device, VK_SHADER_STAGE_FRAGMENT_BIT);
+        _mainDeletionQueue.pushFunction([&]() {
+            vkDestroyDescriptorSetLayout(_device, _singleImageDescriptorLayout, nullptr);
+        });
+    }
+
     //Allocator a descriptor set for the draw image
     _drawImageDescriptors = globalDescriptorAllocator.allocate(_device, _drawImageDescriptorLayout);
 
@@ -799,30 +808,6 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
 
 
-/*
-
-    AllocatedBuffer gpuSceneDataBuffer = createBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-    //add it to the deletion queue of this frame so it gets deleted once its been used
-    getCurrentFrame()._deletionQueue.pushFunction([=, this]() {
-        destroyBuffer(gpuSceneDataBuffer);
-    });
-
-    //write the buffer
-    GPUSceneData* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
-    *sceneUniformData = sceneData;
-
-    //create a descriptor set that binds that buffer and update it
-    VkDescriptorSet globalDescriptor = getCurrentFrame()._frameDescriptors.allocate(_device, _gpuSceneDataDescriptorLayout);
-
-    DescriptorWriter writer;
-    writer.writeBuffer(0, gpuSceneDataBuffer.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.updateSet(_device, globalDescriptor);
-*/
-
-
-
-
     //begin a render pass  connected to our draw image
     VkRenderingAttachmentInfo colorAttachment = VkInit::attachmentInfo(_drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
     VkRenderingAttachmentInfo depthAttachment = VkInit::depthAttachmentInfo(_depthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
@@ -860,6 +845,19 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipeline);
+
+
+    //bind a texture
+    ///um allocating every frame???
+    VkDescriptorSet imageSet = getCurrentFrame()._frameDescriptors.allocate(_device, _singleImageDescriptorLayout);
+    {
+        DescriptorWriter writer;
+        writer.writeImage(0, _errorImage.imageView, _defaultSamplerNearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+        writer.updateSet(_device, imageSet);
+    }
+
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipelineLayout, 0, 1, &imageSet, 0, nullptr);
 
     GPUDrawPushConstants push_constants;
     push_constants.worldMatrix = glm::mat4{ 1.f };
@@ -971,7 +969,7 @@ GPUMeshBuffers VulkanEngine::uploadMesh(std::span<uint32_t> indices, std::span<V
 void VulkanEngine::initMeshPipeline() {
     spdlog::info("GOT TO INIT MESH pipeline");
     VkShaderModule triangleFragShader;
-    if (!VkUtil::loadShaderModule("colored_triangle.frag.spv", _device, &triangleFragShader)) {
+    if (!VkUtil::loadShaderModule("tex_image.frag.spv", _device, &triangleFragShader)) {
         spdlog::error("Error when building the triangle fragment shader module");
     }
     else {
@@ -994,6 +992,8 @@ void VulkanEngine::initMeshPipeline() {
     VkPipelineLayoutCreateInfo pipeline_layout_info = VkInit::pipelineLayoutCreateInfo();
     pipeline_layout_info.pPushConstantRanges = &bufferRange;
     pipeline_layout_info.pushConstantRangeCount = 1;
+    pipeline_layout_info.pSetLayouts = &_singleImageDescriptorLayout;
+    pipeline_layout_info.setLayoutCount = 1;
 
     VK_CHECK(vkCreatePipelineLayout(_device, &pipeline_layout_info, nullptr, &_meshPipelineLayout));
 
@@ -1080,7 +1080,7 @@ void VulkanEngine::initDefaultData() {
 
     // Error texture image
 
-    uint32_t magenta = 0xFF00FFFF;
+    uint32_t magenta = 0xFFF0FFFF;
     std::array<uint32_t , 16 * 16> pixels;
     for (int x = 0; x < 16; x++) {
         for (int y = 0; y < 16; y++) {
@@ -1105,7 +1105,15 @@ void VulkanEngine::initDefaultData() {
 
     vkCreateSampler(_device, &sampl, nullptr, &_defaultSamplerLinear);
 
+    _mainDeletionQueue.pushFunction([&]() {
+        destroyImage(_blackImage);
+        destroyImage(_whiteImage);
+        destroyImage(_greyImage);
+        destroyImage(_errorImage);
 
+        vkDestroySampler(_device, _defaultSamplerLinear, nullptr);
+        vkDestroySampler(_device, _defaultSamplerNearest, nullptr);
+    });
     testMeshes = VkLoader::loadGltfMeshes(this, "../../Assets/basicmesh.glb").value();
 
 
@@ -1212,7 +1220,7 @@ AllocatedImage VulkanEngine::createImage(void *data, VkExtent3D size, VkFormat f
 }
 
 void VulkanEngine::destroyImage(const AllocatedImage &img) {
-    VkDestroyImageView(_device, img.imageView, nullptr);
+    vkDestroyImageView(_device, img.imageView, nullptr);
     vmaDestroyImage(_allocator, img.image, img.allocation);
 }
 

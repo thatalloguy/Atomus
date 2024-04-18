@@ -112,6 +112,9 @@ class VulkanEngine {
         VkCommandBuffer _immCommandBuffer;
         VkCommandPool _immCommandPool;
 
+        //textu
+        VkDescriptorSetLayout _singleImageDescriptorLayout;
+
         void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
 
         AllocatedBuffer createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
