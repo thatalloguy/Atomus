@@ -171,6 +171,11 @@ class VulkanEngine {
         std::vector<std::shared_ptr<MeshAsset>> testMeshes;
         glm::vec3 monkeyPos{ 0, 0, 0};
 
+        //scene
+        GPUSceneData sceneData;
+
+        VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
+
         void initDefaultData();
 };
 
