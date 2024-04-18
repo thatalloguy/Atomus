@@ -157,7 +157,12 @@ void VulkanEngine::Draw()
 
     // get the image from the swapchain
     uint32_t swapchainImageIndex;
-    VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, 1000000000, getCurrentFrame()._swapchainSemaphore, nullptr, &swapchainImageIndex));
+    VkResult e = vkAcquireNextImageKHR(_device, _swapchain, 1000000000, getCurrentFrame()._swapchainSemaphore, nullptr, &swapchainImageIndex);
+
+    if (e == VK_ERROR_OUT_OF_DATE_KHR) {
+        resizeRequested = true;
+        return;
+    }
 
     VkCommandBuffer cmd = getCurrentFrame()._mainCommandBuffer;
 
@@ -228,7 +233,11 @@ void VulkanEngine::Draw()
 
     presentInfo.pImageIndices = &swapchainImageIndex;
 
-    VK_CHECK(vkQueuePresentKHR(_graphicsQueue, &presentInfo));
+    VkResult presentResult = vkQueuePresentKHR(_graphicsQueue, &presentInfo);
+
+    if (presentResult == VK_ERROR_OUT_OF_DATE_KHR) {
+        resizeRequested = true;
+    }
 
     _frameNumber++;
 }
@@ -255,6 +264,10 @@ void VulkanEngine::Run()
                 continue;
             }
 
+            if (resizeRequested) {
+                resizeSwapchain();
+            }
+
             // Imgui
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -272,6 +285,12 @@ void VulkanEngine::Run()
                 ImGui::InputFloat4("data2", (float*)& selected.data.data2);
                 ImGui::InputFloat4("data3", (float*)& selected.data.data3);
                 ImGui::InputFloat4("data4", (float*)& selected.data.data4);
+
+
+                ImGui::Spacing();
+                ImGui::Separator();
+
+                ImGui::DragFloat3("Pos", (float*) &monkeyPos, 0.1f, -20.0f, 20.0f);
 
                 ImGui::End();
             }
@@ -808,14 +827,13 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
 
     /// Model
-    glm::mat4 view;
-    glm::translate(view, glm::vec3{-10, -10, -19});
+    glm::mat4 view{1.f};
+    view = glm::translate(view, monkeyPos);
 
-    glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)_drawExtent.width / (float)_drawExtent.height, 10000.f, 0.1f);
-
+    glm::mat4 projection = glm::perspective(glm::radians(90.f), (float)_drawExtent.width / (float)_drawExtent.height, 10000.f, 0.1f);
     //invert the Y since we vulkan
-    projection[1][1] *= -1;
-    push_constants.worldMatrix = glm::mat4{1.f};
+    //projection[1][1] *= -1;
+    push_constants.worldMatrix = view;
     push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
 
     vkCmdPushConstants(cmd, _meshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
@@ -1017,6 +1035,21 @@ void VulkanEngine::initDefaultData() {
             destroyBuffer(mesh->meshBuffers.indexBuffer);
         }
     });
+}
+
+void VulkanEngine::resizeSwapchain() {
+    vkDeviceWaitIdle(_device);
+
+    destroySwapchain();
+
+    int w, h;
+    glfwGetWindowSize(_window, &w, &h);
+    _windowExtent.width = w;
+    _windowExtent.height = h;
+
+    createSwapchain(_windowExtent.width, _windowExtent.height);
+
+    resizeRequested = false;
 }
 
 

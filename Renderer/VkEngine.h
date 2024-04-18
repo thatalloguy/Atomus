@@ -137,6 +137,7 @@ class VulkanEngine {
 
         // swapchain lifetime functions
         void createSwapchain(uint32_t width, uint32_t height);
+        void resizeSwapchain();
         void destroySwapchain();
 
         void initDescriptors();
@@ -164,9 +165,11 @@ class VulkanEngine {
 
         void initMeshPipeline();
 
-        //temp?
+        bool resizeRequested = false;
 
-       std::vector<std::shared_ptr<MeshAsset>> testMeshes;
+        std::vector<std::shared_ptr<MeshAsset>> testMeshes;
+        glm::vec3 monkeyPos{ 0, 0, 0};
+
         void initDefaultData();
 };
 
