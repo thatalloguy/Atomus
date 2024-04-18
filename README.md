@@ -17,7 +17,7 @@ My personal vulkan renderer
 - [x] Mesh Buffers
 - [x] Mesh loading
 - [x] Blending
-- [ ] Window Resizing
+- [x] Window Resizing
 -
 - [ ] Descriptors Abstractions
 - [ ] Textures
