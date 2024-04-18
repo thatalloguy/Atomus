@@ -75,3 +75,112 @@ VkDescriptorSet DescriptorAllocator::allocate(VkDevice device, VkDescriptorSetLa
 
     return ds;
 }
+
+void DescriptorAllocatorGrowable::init(VkDevice device, uint32_t maxSets, std::span<PoolSizeRatio> poolRatios) {
+    ratios.clear();
+
+    for (auto r : poolRatios) {
+        ratios.push_back(r);
+    }
+
+    VkDescriptorPool newPool = createPool(device, maxSets, poolRatios);
+
+    setsPerPool = maxSets * 1.5; // grow for next alloc.
+
+    readyPools.push_back(newPool);
+}
+
+void DescriptorAllocatorGrowable::clearPools(VkDevice device) {
+    for (auto p : readyPools) {
+        vkResetDescriptorPool(device, p, 0);
+    }
+    for (auto p : fullPools) {
+        vkResetDescriptorPool(device, p, 0);
+        readyPools.push_back(p);
+    }
+    fullPools.clear();
+}
+
+void DescriptorAllocatorGrowable::destroyPools(VkDevice device) {
+    for (auto p :readyPools) {
+        vkDestroyDescriptorPool(device, p, nullptr);
+    }
+    readyPools.clear();
+
+    for (auto p : fullPools) {
+        vkDestroyDescriptorPool(device, p, nullptr);
+    }
+    fullPools.clear();
+}
+
+VkDescriptorSet DescriptorAllocatorGrowable::allocate(VkDevice device, VkDescriptorSetLayout layout) {
+    //get or create a pool to alloc from
+    VkDescriptorPool poolToUse = getPool(device);
+
+    VkDescriptorSetAllocateInfo allocInfo = {};
+    allocInfo.pNext = nullptr;
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = poolToUse;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &layout;
+
+    VkDescriptorSet ds;
+    VkResult result = vkAllocateDescriptorSets(device, &allocInfo, &ds);
+
+    //if failed try again
+    if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL) {
+        fullPools.push_back(poolToUse);
+
+        poolToUse = getPool(device);
+
+        allocInfo.descriptorPool = poolToUse;
+
+        VK_CHECK(vkAllocateDescriptorSets(device, &allocInfo, &ds));
+    }
+
+    readyPools.push_back(poolToUse);
+
+    return ds;
+}
+
+VkDescriptorPool DescriptorAllocatorGrowable::getPool(VkDevice device) {
+    VkDescriptorPool newPool;
+
+    if (readyPools.size() != 0) {
+        newPool = readyPools.back();
+        readyPools.pop_back();
+    } else {
+        // no readypools :(
+        newPool = createPool(device, setsPerPool, ratios);
+
+        setsPerPool = setsPerPool * 1.5;
+        if (setsPerPool > 4092) {
+            setsPerPool = 4092;
+        }
+
+    }
+
+    return newPool;
+}
+
+VkDescriptorPool DescriptorAllocatorGrowable::createPool(VkDevice device, uint32_t setCount, std::span<PoolSizeRatio> poolRatios) {
+    std::vector<VkDescriptorPoolSize> poolSizes;
+
+    for (PoolSizeRatio ratio : ratios) {
+        poolSizes.push_back(VkDescriptorPoolSize{
+           .type = ratio.type,
+           .descriptorCount = uint32_t(ratio.ratio * setCount)
+        });
+    }
+
+    VkDescriptorPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.flags = 0;
+    poolInfo.maxSets = setCount;
+    poolInfo.poolSizeCount = (uint32_t )poolSizes.size();
+    poolInfo.pPoolSizes = poolSizes.data();
+
+    VkDescriptorPool newPool;
+    VK_CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &newPool));
+    return newPool;
+}
