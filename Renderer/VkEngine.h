@@ -119,6 +119,10 @@ class VulkanEngine {
 
         GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
 
+        AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+        AllocatedImage createImage(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+
+        void destroyImage(const AllocatedImage& img);
 
         // Life-time functions
         static VulkanEngine& Get();
@@ -167,6 +171,15 @@ class VulkanEngine {
         void initMeshPipeline();
 
         bool resizeRequested = false;
+
+        // MORE TEMP RAHHH
+        AllocatedImage _whiteImage;
+        AllocatedImage _blackImage;
+        AllocatedImage _greyImage;
+        AllocatedImage _errorImage;
+
+        VkSampler _defaultSamplerLinear;
+        VkSampler _defaultSamplerNearest;
 
         std::vector<std::shared_ptr<MeshAsset>> testMeshes;
         glm::vec3 monkeyPos{ 0, 0, 0};
