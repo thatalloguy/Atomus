@@ -85,7 +85,7 @@ void VulkanEngine::initDescriptors() {
     //Allocator a descriptor set for the draw image
     _drawImageDescriptors = globalDescriptorAllocator.allocate(_device, _drawImageDescriptorLayout);
 
-    VkDescriptorImageInfo imgInfo{};
+    /*VkDescriptorImageInfo imgInfo{};
     imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
     imgInfo.imageView = _drawImage.imageView;
 
@@ -99,11 +99,32 @@ void VulkanEngine::initDescriptors() {
     drawImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     drawImageWrite.pImageInfo = &imgInfo;
 
-    vkUpdateDescriptorSets(_device, 1, &drawImageWrite, 0, nullptr);
+    vkUpdateDescriptorSets(_device, 1, &drawImageWrite, 0, nullptr);*/
+
+    DescriptorWriter writer;
+    writer.writeImage(0, _drawImage.imageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+
+    writer.updateSet(_device, _drawImageDescriptors);
 
     _mainDeletionQueue.pushFunction([&]() {
         vkDestroyDescriptorSetLayout(_device, _drawImageDescriptorLayout, nullptr);
     });
+
+    for (int i = 0; i < FRAME_OVERLAP; i++) {
+        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frame_sizes = {
+                { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
+                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
+        };
+
+        _frames[i]._frameDescriptors = DescriptorAllocatorGrowable{};
+        _frames[i]._frameDescriptors.init(_device, 1000, frame_sizes);
+
+        _mainDeletionQueue.pushFunction([&, i]() {
+           _frames[i]._frameDescriptors.destroyPools(_device);
+        });
+    }
 }
 
 
@@ -152,6 +173,7 @@ void VulkanEngine::Draw()
 
     //Flush the current Frame deletion Que
     getCurrentFrame()._deletionQueue.flush();
+    getCurrentFrame()._frameDescriptors.clearPools(_device);
 
     VK_CHECK(vkResetFences(_device, 1, &getCurrentFrame()._renderFence));
 

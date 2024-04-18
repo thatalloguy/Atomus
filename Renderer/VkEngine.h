@@ -28,6 +28,7 @@ struct FrameData {
     VkFence _renderFence;
 
     DeletionQueue _deletionQueue;
+    DescriptorAllocatorGrowable _frameDescriptors;
 };
 
 
