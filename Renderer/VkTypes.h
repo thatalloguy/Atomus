@@ -73,6 +73,45 @@ struct GPUDrawPushConstants {
     VkDeviceAddress vertexBuffer;
 };
 
+
+struct MaterialPipeline {
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
+};
+
+enum MaterialPass {
+    transparent = 0,
+    opaque = 1
+};
+
+struct MaterialInstance {
+    MaterialPipeline* pipeline;
+    VkDescriptorSet materialSet;
+    MaterialPass passType;
+};
+
+
+struct RenderObject {
+    uint32_t indexCount;
+    uint32_t firstIndex;
+    VkBuffer indexBuffer;
+
+    MaterialInstance* material;
+
+    glm::mat4 transform;
+    VkDeviceAddress vertexBufferAdress;
+};
+
+
+struct DrawContext {};
+
+class IRenderable {
+    ///TODO define DrawContext
+    virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx);
+};
+
+
+
 struct DeletionQueue {
     std::deque<std::function<void()>> deletors;
 
