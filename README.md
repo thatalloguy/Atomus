@@ -21,7 +21,7 @@ My personal vulkan renderer
 -
 - [x] Descriptors Abstractions
 - [x] Textures
-- [ ] Engine Architecture
+- [x] Engine Architecture
 - [ ] Materials
 - [ ] Meshes & camera
 -
