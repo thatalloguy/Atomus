@@ -79,9 +79,10 @@ struct MaterialPipeline {
     VkPipelineLayout layout;
 };
 
-enum MaterialPass {
-    transparent = 0,
-    opaque = 1
+enum MaterialPass : uint8_t {
+    MainColor,
+    Transparent,
+    Other
 };
 
 struct MaterialInstance {

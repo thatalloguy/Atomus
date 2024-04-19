@@ -48,6 +48,40 @@ struct ComputeEffect {
     ComputePushConstants data;
 };
 
+struct GLTFMetallic_roughness {
+    MaterialPipeline opaquePipeline;
+    MaterialPipeline transparentPipline;
+
+    VkDescriptorSetLayout materialLayout;
+
+    struct MaterialConstants {
+        glm::vec4 colorFactors;
+        glm::vec4 metalRoughFactors;
+
+        //padding we need it for the uniform buffer
+        glm::vec4 extra[14];
+    };
+
+    struct MaterialResources {
+        AllocatedImage colorImage;
+        VkSampler colorSampler;
+        AllocatedImage metalRoughImage;
+        VkSampler metalRoughSampler;
+        VkBuffer dataBuffer;
+        uint32_t dataBufferOffset;
+    };
+
+    DescriptorWriter writer;
+
+    void buildPipelines(VulkanEngine* engine);
+    void clearResources(VkDevice device);
+
+    MaterialInstance writeMaterial(VkDevice device, MaterialPass pass, const MaterialResources& resources, DescriptorAllocatorGrowable descriptorAllocator);`~
+
+};
+
+
+
 constexpr unsigned int FRAME_OVERLAP = 2;
 
 
