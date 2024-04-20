@@ -1134,8 +1134,7 @@ void VulkanEngine::initDefaultData() {
     _mainDeletionQueue.pushFunction([=, this]() {
 
         //material
-        vkDestroyPipelineLayout(_device, defaultData.pipeline->layout, nullptr);
-        metalRoughMaterial.destroy(_device);
+        metalRoughMaterial.destroy(_device, defaultData.passType);
         destroyBuffer(materialConstants);
 
     });
@@ -1362,10 +1361,14 @@ MaterialInstance GLTFMetallic_roughness::writeMaterial(VkDevice device, Material
 
 }
 
-void GLTFMetallic_roughness::destroy(VkDevice device) {
-
-
+void GLTFMetallic_roughness::destroy(VkDevice device, MaterialPass pass) {
     vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
     vkDestroyPipeline(device, transparentPipline.pipeline, nullptr);
     vkDestroyPipeline(device, opaquePipeline.pipeline, nullptr);
+
+    if (pass == MaterialPass::Transparent) {
+        vkDestroyPipelineLayout(device, transparentPipline.layout, nullptr);
+    } else {
+        vkDestroyPipelineLayout(device, opaquePipeline.layout, nullptr);
+    }
 }

@@ -77,7 +77,7 @@ struct GLTFMetallic_roughness {
     void clearResources(VkDevice device);
 
     MaterialInstance writeMaterial(VkDevice device, MaterialPass pass, const MaterialResources& resources, DescriptorAllocatorGrowable descriptorAllocator);
-    void destroy(VkDevice device);
+    void destroy(VkDevice device, MaterialPass passType);
 };
 
 
