@@ -149,6 +149,16 @@ class VulkanEngine {
         //textu
         VkDescriptorSetLayout _singleImageDescriptorLayout;
 
+        // misc
+
+        std::vector<std::shared_ptr<MeshAsset>> testMeshes;
+        glm::vec3 monkeyPos{ 0, 0, 0};
+
+        //scene
+        GPUSceneData sceneData;
+
+        VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
+
         void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
 
         AllocatedBuffer createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
@@ -218,13 +228,6 @@ class VulkanEngine {
         VkSampler _defaultSamplerLinear;
         VkSampler _defaultSamplerNearest;
 
-        std::vector<std::shared_ptr<MeshAsset>> testMeshes;
-        glm::vec3 monkeyPos{ 0, 0, 0};
-
-        //scene
-        GPUSceneData sceneData;
-
-        VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
 
         void initDefaultData();
 };

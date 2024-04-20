@@ -1225,3 +1225,83 @@ void VulkanEngine::destroyImage(const AllocatedImage &img) {
 }
 
 
+
+//// GLTFMetallic
+
+
+void GLTFMetallic_roughness::buildPipelines(VulkanEngine *engine) {
+    VkShaderModule meshFragShader;
+    if (!VkUtil::loadShaderModule("mesh.frag.spv", engine->_device, &meshFragShader)) {
+        spdlog::error("Error when building the [mesh] [fragment] shader");
+    }
+
+    VkShaderModule meshVertexShader;
+    if (!VkUtil::loadShaderModule("mesh.vert.spv", engine->_device, &meshVertexShader)) {
+        spdlog::error("Error when building the [mesh] [vertex] shader");
+    }
+
+    VkPushConstantRange matrixRange{};
+    matrixRange.offset = 0;
+    matrixRange.size = sizeof(GPUDrawPushConstants);
+    matrixRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    DescriptorLayoutBuilder layoutBuilder;
+    layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+    materialLayout = layoutBuilder.build(engine->_device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    VkDescriptorSetLayout layouts[] = {
+            engine->_gpuSceneDataDescriptorLayout,
+            materialLayout
+    };
+
+    VkPipelineLayoutCreateInfo meshLayoutInfo = VkInit::pipelineLayoutCreateInfo();
+    meshLayoutInfo.setLayoutCount = 2;
+    meshLayoutInfo.pSetLayouts = layouts;
+    meshLayoutInfo.pPushConstantRanges = &matrixRange;
+    meshLayoutInfo.pushConstantRangeCount = 1;
+
+    VkPipelineLayout newLayout;
+    VK_CHECK(vkCreatePipelineLayout(engine->_device, &meshLayoutInfo, nullptr, &newLayout));
+
+    opaquePipeline.layout = newLayout;
+    transparentPipline.layout = newLayout;
+
+
+    PipelineBuilder pipelineBuilder;
+    pipelineBuilder.setShaders(meshVertexShader, meshFragShader);
+    pipelineBuilder.setInputToplogy(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    pipelineBuilder.setPolygonMode(VK_POLYGON_MODE_FILL);
+    pipelineBuilder.setCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+    pipelineBuilder.setMultisamplingNone();
+    pipelineBuilder.disableBlending();
+    pipelineBuilder.enableDepthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+
+    //render format
+    pipelineBuilder._pipelineLayout = newLayout;
+
+    //build the pipeline
+    opaquePipeline.pipeline = pipelineBuilder.buildPipeline(engine->_device);
+
+    //create the transparent variant
+    pipelineBuilder.enableBlendingAdditive();
+
+    pipelineBuilder.enableDepthtest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
+
+    transparentPipline.pipeline = pipelineBuilder.buildPipeline(engine->_device);
+
+    vkDestroyShaderModule(engine->_device, meshFragShader, nullptr);
+    vkDestroyShaderModule(engine->_device, meshVertexShader, nullptr);
+}
+
+void GLTFMetallic_roughness::clearResources(VkDevice device) {
+
+}
+
+MaterialInstance GLTFMetallic_roughness::writeMaterial(VkDevice device, MaterialPass pass,
+                                                       const GLTFMetallic_roughness::MaterialResources &resources,
+                                                       DescriptorAllocatorGrowable descriptorAllocator) {
+    return MaterialInstance();
+}

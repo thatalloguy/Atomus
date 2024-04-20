@@ -6,6 +6,10 @@ C:\VulkanSDK\1.3.275.0\Bin\glslc.exe Shaders/colored_triangle.frag -o cmake-buil
 
 C:\VulkanSDK\1.3.275.0\Bin\glslc.exe Shaders/tex_image.frag -o cmake-build-build-debug/Debug/tex_image.frag.spv
 
+C:\VulkanSDK\1.3.275.0\Bin\glslc.exe Shaders/mesh.frag -o cmake-build-build-debug/Debug/mesh.frag.spv
+
+C:\VulkanSDK\1.3.275.0\Bin\glslc.exe Shaders/mesh.vert -o cmake-build-build-debug/Debug/mesh.vert.spv
+
 C:\VulkanSDK\1.3.275.0\Bin\glslc.exe Shaders/colored_triangle_mesh.vert -o cmake-build-build-debug/Debug/colored_triangle_mesh.vert.spv
 
 pause
