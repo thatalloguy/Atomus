@@ -846,7 +846,7 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
     AllocatedBuffer gpuSceneBufferData = createBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-    getCurrentFrame()._deletionQueue.pushFunction([&]() {
+    getCurrentFrame()._deletionQueue.pushFunction([=, this]() {
         destroyBuffer(gpuSceneBufferData);
     });
 
@@ -881,6 +881,7 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 }
 
 AllocatedBuffer VulkanEngine::createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
+    // allocate buffer
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.pNext = nullptr;
