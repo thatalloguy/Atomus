@@ -170,6 +170,9 @@ void VulkanEngine::CleanUp()
 
 void VulkanEngine::Draw()
 {
+    updateScene();
+
+
     // wait until the gpu has finished rendering the last frame
     VK_CHECK(vkWaitForFences(_device, 1, &getCurrentFrame()._renderFence, true, 1000000000));
 
@@ -304,17 +307,20 @@ void VulkanEngine::Run()
                 ImGui::Text("Selected Effect: %s", selected.name);
 
                 ImGui::SliderInt("Effect Index", &currentBackgroundEffect, 0, backgroundEffects.size() - 1);
+                if (ImGui::TreeNode("Background")) {
+                    ImGui::InputFloat4("data1", (float*)& selected.data.data1);
+                    ImGui::InputFloat4("data2", (float*)& selected.data.data2);
+                    ImGui::InputFloat4("data3", (float*)& selected.data.data3);
+                    ImGui::InputFloat4("data4", (float*)& selected.data.data4);
 
-                ImGui::InputFloat4("data1", (float*)& selected.data.data1);
-                ImGui::InputFloat4("data2", (float*)& selected.data.data2);
-                ImGui::InputFloat4("data3", (float*)& selected.data.data3);
-                ImGui::InputFloat4("data4", (float*)& selected.data.data4);
+                    ImGui::TreePop();
+                }
 
 
                 ImGui::Spacing();
                 ImGui::Separator();
 
-                ImGui::DragFloat3("Pos", (float*) &monkeyPos, 0.1f, -20.0f, 20.0f);
+                //ImGui::DragFloat3("Pos", (float*) &monkeyPos, 0.1f, -20.0f, 20.0f);
 
                 ImGui::End();
             }
@@ -817,8 +823,6 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
     VkRenderingInfo renderInfo = VkInit::renderingInfo(_drawExtent, &colorAttachment, &depthAttachment);
     vkCmdBeginRendering(cmd, &renderInfo);
 
-////    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _trianglePipeline);
-
     //set dynamic viewport and scissor
     VkViewport viewport = {};
     viewport.x = 0;
@@ -838,53 +842,40 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    //launch a draw command to draw 3 vertices
-////    vkCmdDraw(cmd, 3, 1, 0, 0);
 
 
-    // PLEASE WORK I BEG YOOOOUUUU
+    AllocatedBuffer gpuSceneBufferData = createBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
+    getCurrentFrame()._deletionQueue.pushFunction([&]() {
+        destroyBuffer(gpuSceneBufferData);
+    });
 
+    //write the buffer
+    GPUSceneData* sceneUniformData = (GPUSceneData*)gpuSceneBufferData.allocation->GetMappedData();
+    *sceneUniformData = sceneData;
 
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipeline);
+    //create a descriptor set that binds that buffer and update it
+    VkDescriptorSet globalDescriptor = getCurrentFrame()._frameDescriptors.allocate(_device, _gpuSceneDataDescriptorLayout);
 
+    DescriptorWriter writer;
+    writer.writeBuffer(0, gpuSceneBufferData.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.updateSet(_device, globalDescriptor);
 
-    //bind a texture
-    ///um allocating every frame???
-    VkDescriptorSet imageSet = getCurrentFrame()._frameDescriptors.allocate(_device, _singleImageDescriptorLayout);
-    {
-        DescriptorWriter writer;
-        writer.writeImage(0, _errorImage.imageView, _defaultSamplerNearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    for (const RenderObject& draw : mainDrawContext.OpaqueSurfaces) {
 
-        writer.updateSet(_device, imageSet);
+        vkCmdBindPipeline(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline->pipeline);
+        vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,draw.material->pipeline->layout, 0,1, &globalDescriptor,0,nullptr );
+        vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,draw.material->pipeline->layout, 1,1, &draw.material->materialSet,0,nullptr );
+
+        vkCmdBindIndexBuffer(cmd, draw.indexBuffer,0,VK_INDEX_TYPE_UINT32);
+
+        GPUDrawPushConstants pushConstants;
+        pushConstants.vertexBuffer = draw.vertexBufferAddress;
+        pushConstants.worldMatrix = draw.transform;
+        vkCmdPushConstants(cmd,draw.material->pipeline->layout ,VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(GPUDrawPushConstants), &pushConstants);
+
+        vkCmdDrawIndexed(cmd,draw.indexCount,1,draw.firstIndex,0,0);
     }
-
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _meshPipelineLayout, 0, 1, &imageSet, 0, nullptr);
-
-    GPUDrawPushConstants push_constants;
-    push_constants.worldMatrix = glm::mat4{ 1.f };
-    push_constants.vertexBuffer = rectangle.vertexBufferAddress;
-
-    vkCmdPushConstants(cmd, _meshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-    vkCmdBindIndexBuffer(cmd, rectangle.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-    //vkCmdDrawIndexed(cmd, 6, 1, 0, 0, 0);
-
-
-    /// Model
-    glm::mat4 view{1.f};
-    view = glm::translate(view, monkeyPos);
-
-    glm::mat4 projection = glm::perspective(glm::radians(90.f), (float)_drawExtent.width / (float)_drawExtent.height, 10000.f, 0.1f);
-    //invert the Y since we vulkan
-    //projection[1][1] *= -1;
-    push_constants.worldMatrix = view;
-    push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
-
-    vkCmdPushConstants(cmd, _meshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-    vkCmdBindIndexBuffer(cmd, testMeshes[2]->meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-    vkCmdDrawIndexed(cmd, testMeshes[2]->surfaces[0].count, 1, testMeshes[2]->surfaces[0].startIndex, 0, 0);
 
     vkCmdEndRendering(cmd);
 }
@@ -1039,32 +1030,7 @@ void VulkanEngine::initMeshPipeline() {
 }
 
 void VulkanEngine::initDefaultData() {
-    spdlog::info("INITING DEFAULT DATA!");
-    std::array<Vertex,4> rect_vertices;
-
-    rect_vertices[0].position = {0.5,-0.5, 0};
-    rect_vertices[1].position = {0.5,0.5, 0};
-    rect_vertices[2].position = {-0.5,-0.5, 0};
-    rect_vertices[3].position = {-0.5,0.5, 0};
-
-    rect_vertices[0].color = {0,0, 0,1};
-    rect_vertices[1].color = { 0.5,0.5,0.5 ,1};
-    rect_vertices[2].color = { 1,0, 0,1 };
-    rect_vertices[3].color = { 0,1, 0,1 };
-
-    std::array<uint32_t,6> rect_indices;
-
-    rect_indices[0] = 0;
-    rect_indices[1] = 1;
-    rect_indices[2] = 2;
-
-    rect_indices[3] = 2;
-    rect_indices[4] = 1;
-    rect_indices[5] = 3;
-
-    // just a simple rectangle for testing
-    rectangle = uploadMesh(rect_indices,rect_vertices);
-
+    spdlog::info("INIT DEFAULT DATA!");
 
     //TEXTURES manually ;-;
     uint32_t white = 0xFFFFFFFF;
@@ -1138,6 +1104,22 @@ void VulkanEngine::initDefaultData() {
         destroyBuffer(materialConstants);
 
     });
+    testMeshes = VkLoader::loadGltfMeshes(this, "../../Assets/basicmesh.glb").value();
+
+
+    for (auto& m: testMeshes) {
+        std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
+        newNode->mesh = m;
+
+        newNode->localTransform = glm::mat4{ 1.f };
+        newNode->worldTransform = glm::mat4{ 1.f };
+
+        for (auto& s : newNode->mesh->surfaces) {
+            s.material = std::make_shared<GLTFMaterial>(defaultData);
+        }
+
+        loadedNodes[m->name] = std::move(newNode);
+    }
 
     _mainDeletionQueue.pushFunction([&]() {
         destroyImage(_blackImage);
@@ -1148,6 +1130,7 @@ void VulkanEngine::initDefaultData() {
 
         vkDestroySampler(_device, _defaultSamplerLinear, nullptr);
         vkDestroySampler(_device, _defaultSamplerNearest, nullptr);
+/*
 
 
         for (auto mesh : testMeshes) {
@@ -1158,13 +1141,10 @@ void VulkanEngine::initDefaultData() {
 
         destroyBuffer(rectangle.vertexBuffer);
         destroyBuffer(rectangle.indexBuffer);
+        */
+
 
     });
-
-
-    testMeshes = VkLoader::loadGltfMeshes(this, "../../Assets/basicmesh.glb").value();
-
-
 
     spdlog::info("Done with default data");
 
@@ -1258,6 +1238,26 @@ AllocatedImage VulkanEngine::createImage(void *data, VkExtent3D size, VkFormat f
 void VulkanEngine::destroyImage(const AllocatedImage &img) {
     vkDestroyImageView(_device, img.imageView, nullptr);
     vmaDestroyImage(_allocator, img.image, img.allocation);
+}
+
+void VulkanEngine::updateScene() {
+    mainDrawContext.OpaqueSurfaces.clear();
+
+    loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);
+
+    sceneData.view = glm::mat4{1.f};
+
+    sceneData.proj = glm::mat4{1.f};
+
+
+    sceneData.proj[1][1] *= -1;
+    sceneData.viewproj = sceneData.view * sceneData.proj;
+
+    //some default lighting parameters
+    sceneData.ambientColor = glm::vec4(.1f);
+    sceneData.sunlightColor = glm::vec4(1.f);
+    sceneData.sunLightDirection = glm::vec4(0,1,0.5,1.f);
+
 }
 
 
@@ -1371,4 +1371,25 @@ void GLTFMetallic_roughness::destroy(VkDevice device, MaterialPass pass) {
     } else {
         vkDestroyPipelineLayout(device, opaquePipeline.layout, nullptr);
     }
+}
+
+void MeshNode::Draw(const glm::mat4 &topMatrix, DrawContext &ctx) {
+    glm::mat4 nodeMatrix = topMatrix * worldTransform;
+
+
+    for (auto& s: mesh->surfaces) {
+        RenderObject def;
+        def.indexCount = s.count;
+        def.firstIndex = s.startIndex;
+        def.indexBuffer = mesh->meshBuffers.indexBuffer.buffer;
+        def.material = &s.material->data;
+
+        def.transform = nodeMatrix;
+        def.vertexBufferAddress = mesh->meshBuffers.vertexBufferAddress;
+
+        ctx.OpaqueSurfaces.push_back(def);
+
+    }
+
+    Node::Draw(topMatrix, ctx);
 }

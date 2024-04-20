@@ -81,6 +81,63 @@ struct GLTFMetallic_roughness {
 };
 
 
+struct RenderObject {
+    uint32_t indexCount;
+    uint32_t firstIndex;
+    VkBuffer indexBuffer;
+
+    MaterialInstance* material;
+
+    glm::mat4 transform;
+    VkDeviceAddress vertexBufferAddress;
+};
+
+
+struct DrawContext {
+    std::vector<RenderObject> OpaqueSurfaces;
+};
+
+
+
+
+struct DrawContext;
+
+class IRenderable {
+    ///TODO define DrawContext
+    virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) = 0;
+};
+
+
+struct Node : public IRenderable {
+
+    std::weak_ptr<Node> parent;
+    std::vector<std::shared_ptr<Node>> childern;
+
+    glm::mat4 localTransform;
+    glm::mat4 worldTransform;
+
+    void refreshTransform(const glm::mat4& parentMatrix) {
+        worldTransform = parentMatrix * localTransform;
+        for (auto c : childern) {
+            c->refreshTransform(worldTransform);
+        }
+    }
+
+    virtual void Draw (const glm::mat4& topMatrix, DrawContext& ctx) {
+
+        for (auto& c : childern) {
+            c->Draw(topMatrix, ctx);
+        }
+    }
+};
+
+struct MeshNode : public Node {
+
+    std::shared_ptr<MeshAsset> mesh;
+
+    virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) override;
+
+};
 
 constexpr unsigned int FRAME_OVERLAP = 2;
 
@@ -151,11 +208,15 @@ class VulkanEngine {
 
         // misc
 
-        std::vector<std::shared_ptr<MeshAsset>> testMeshes;
-        glm::vec3 monkeyPos{ 0, 0, 0};
+
 
         //scene
+
+        DrawContext mainDrawContext;
         GPUSceneData sceneData;
+
+        std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
+
 
         VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
 
@@ -209,6 +270,9 @@ class VulkanEngine {
         void initTrianglePipeline();
         void drawGeometry(VkCommandBuffer cmd);
 
+        void updateScene();
+
+        std::vector<std::shared_ptr<MeshAsset>> testMeshes;
 
         VkPipelineLayout _meshPipelineLayout;
         VkPipeline _meshPipeline;

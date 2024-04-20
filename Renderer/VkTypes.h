@@ -37,6 +37,9 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
+
+//TODO add documentation
+
 struct AllocatedBuffer {
     VkBuffer buffer;
     VmaAllocation allocation;
@@ -90,27 +93,6 @@ struct MaterialInstance {
     VkDescriptorSet materialSet;
     MaterialPass passType;
 };
-
-
-struct RenderObject {
-    uint32_t indexCount;
-    uint32_t firstIndex;
-    VkBuffer indexBuffer;
-
-    MaterialInstance* material;
-
-    glm::mat4 transform;
-    VkDeviceAddress vertexBufferAdress;
-};
-
-
-struct DrawContext {};
-
-class IRenderable {
-    ///TODO define DrawContext
-    virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx);
-};
-
 
 
 struct DeletionQueue {
