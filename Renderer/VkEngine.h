@@ -76,8 +76,8 @@ struct GLTFMetallic_roughness {
     void buildPipelines(VulkanEngine* engine);
     void clearResources(VkDevice device);
 
-    MaterialInstance writeMaterial(VkDevice device, MaterialPass pass, const MaterialResources& resources, DescriptorAllocatorGrowable descriptorAllocator);`~
-
+    MaterialInstance writeMaterial(VkDevice device, MaterialPass pass, const MaterialResources& resources, DescriptorAllocatorGrowable descriptorAllocator);
+    void destroy(VkDevice device);
 };
 
 
@@ -131,7 +131,7 @@ class VulkanEngine {
         VkExtent2D _drawExtent;
 
         //Descriptor stuff ;-;
-        DescriptorAllocator globalDescriptorAllocator;
+        DescriptorAllocatorGrowable globalDescriptorAllocator;
 
         VkDescriptorSet _drawImageDescriptors;
         VkDescriptorSetLayout _drawImageDescriptorLayout;
@@ -227,6 +227,9 @@ class VulkanEngine {
 
         VkSampler _defaultSamplerLinear;
         VkSampler _defaultSamplerNearest;
+
+        MaterialInstance defaultData;
+        GLTFMetallic_roughness metalRoughMaterial;
 
 
         void initDefaultData();
