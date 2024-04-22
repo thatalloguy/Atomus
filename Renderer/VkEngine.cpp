@@ -1321,7 +1321,7 @@ void GLTFMetallic_roughness::buildPipelines(VulkanEngine *engine) {
 
     //render format
     pipelineBuilder._pipelineLayout = newLayout;
-
+    pipelineBuilder.setDepthFormat(engine->_depthImage.imageFormat);
     //build the pipeline
     opaquePipeline.pipeline = pipelineBuilder.buildPipeline(engine->_device);
 
@@ -1330,7 +1330,7 @@ void GLTFMetallic_roughness::buildPipelines(VulkanEngine *engine) {
 
     pipelineBuilder.enableDepthtest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-    transparentPipline.pipeline = pipelineBuilder.buildPipeline(engine->_device);
+    transparentPipline.pipeline = nullptr;//pipelineBuilder.buildPipeline(engine->_device);
 
     vkDestroyShaderModule(engine->_device, meshFragShader, nullptr);
     vkDestroyShaderModule(engine->_device, meshVertexShader, nullptr);
