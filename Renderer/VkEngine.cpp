@@ -172,86 +172,81 @@ void VulkanEngine::Draw()
 {
     updateScene();
 
-
-    // wait until the gpu has finished rendering the last frame
+    //wait until the gpu has finished rendering the last frame. Timeout of 1 second
     VK_CHECK(vkWaitForFences(_device, 1, &getCurrentFrame()._renderFence, true, 1000000000));
 
-    //Flush the current Frame deletion Que
     getCurrentFrame()._deletionQueue.flush();
     getCurrentFrame()._frameDescriptors.clearPools(_device);
 
-    VK_CHECK(vkResetFences(_device, 1, &getCurrentFrame()._renderFence));
 
-    // get the image from the swapchain
+    //request image from the swapchain
     uint32_t swapchainImageIndex;
-    VkResult e = vkAcquireNextImageKHR(_device, _swapchain, 1000000000, getCurrentFrame()._swapchainSemaphore, nullptr, &swapchainImageIndex);
 
+    VkResult e = vkAcquireNextImageKHR(_device, _swapchain, 1000000000, getCurrentFrame()._swapchainSemaphore, nullptr, &swapchainImageIndex);
     if (e == VK_ERROR_OUT_OF_DATE_KHR) {
-        resizeRequested = true;
         return;
     }
 
+    _drawExtent.height = std::min(_swapchainExtent.height, _drawImage.imageExtent.height);
+    _drawExtent.width = std::min(_swapchainExtent.width, _drawImage.imageExtent.width);
+
+    VK_CHECK(vkResetFences(_device, 1, &getCurrentFrame()._renderFence));
+
+    //now that we are sure that the commands finished executing, we can safely reset the command buffer to begin recording again.
+    VK_CHECK(vkResetCommandBuffer(getCurrentFrame()._mainCommandBuffer, 0));
+
+    //naming it cmd for shorter writing
     VkCommandBuffer cmd = getCurrentFrame()._mainCommandBuffer;
 
-    VK_CHECK(vkResetCommandBuffer(cmd, 0));
-
+    //begin the command buffer recording. We will use this command buffer exactly once, so we want to let vulkan know that
     VkCommandBufferBeginInfo cmdBeginInfo = VkInit::commandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-    _drawExtent.width = _drawImage.imageExtent.width;
-    _drawExtent.height = _drawImage.imageExtent.height;
 
     VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
-    // transform our main image into a general one (for writing).
-    // overwite it all since we dont care what the old layout was :shrug:
     VkUtil::transitionImage(cmd, _drawImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
     drawBackground(cmd);
 
     VkUtil::transitionImage(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkUtil::transitionImage(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+    drawGeometry(cmd);
 
-
-   // drawGeometry(cmd);
-
-    //Transition the draw image (and swapchain image) into the correct transfer layours
     VkUtil::transitionImage(cmd, _drawImage.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-    VkUtil::copyImageToImage(cmd, _drawImage.image, _swapchainImages[swapchainImageIndex],  _drawExtent, _swapchainExtent);
+    // execute a copy from the draw image into the swapchain
+    VkUtil::copyImageToImage(cmd, _drawImage.image, _swapchainImages[swapchainImageIndex], _drawExtent,_swapchainExtent);
 
-    //Set the swapchain layout for imgui stuff :)
+    // set swapchain image layout to Attachment Optimal so we can draw it
     VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-    //draw imgui into the swapchain img
+    //draw imgui into the swapchain image
     drawImgui(cmd, _swapchainImageViews[swapchainImageIndex]);
 
-    // set the swapchain image layout to present
+    // set swapchain image layout to Present so we can draw it
     VkUtil::transitionImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
+    //finalize the command buffer (we can no longer add commands, but it can now be executed)
     VK_CHECK(vkEndCommandBuffer(cmd));
 
-    //prepare the submit to queue
-    // wait on _presentSemaphore. and _renderSemaphore
+    //prepare the submission to the queue.
+    //we want to wait on the _presentSemaphore, as that semaphore is signaled when the swapchain is ready
+    //we will signal the _renderSemaphore, to signal that rendering has finished
 
-    VkCommandBufferSubmitInfo cmdInfo = VkInit::commandBufferSubmitInfo(cmd);
+    VkCommandBufferSubmitInfo cmdinfo = VkInit::commandBufferSubmitInfo(cmd);
 
-    VkSemaphoreSubmitInfo waitInfo = VkInit::semaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, getCurrentFrame()._swapchainSemaphore);
+    VkSemaphoreSubmitInfo waitInfo = VkInit::semaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, getCurrentFrame()._swapchainSemaphore);
     VkSemaphoreSubmitInfo signalInfo = VkInit::semaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, getCurrentFrame()._renderSemaphore);
 
-    VkSubmitInfo2 submit = VkInit::submitInfo(&cmdInfo, &signalInfo, &waitInfo);
+    VkSubmitInfo2 submit = VkInit::submitInfo(&cmdinfo, &signalInfo, &waitInfo);
 
-    // submit the cmdbuffer to the queue and execute it
-
+    //submit command buffer to the queue and execute it.
+    // _renderFence will now block until the graphic commands finish execution
     VK_CHECK(vkQueueSubmit2(_graphicsQueue, 1, &submit, getCurrentFrame()._renderFence));
 
 
-    // prepare present
-    // this will put the image to the visible window
+    VkPresentInfoKHR presentInfo = VkInit::presentInfo();
 
-    VkPresentInfoKHR presentInfo = {};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.pNext = nullptr;
     presentInfo.pSwapchains = &_swapchain;
     presentInfo.swapchainCount = 1;
 
@@ -262,10 +257,7 @@ void VulkanEngine::Draw()
 
     VkResult presentResult = vkQueuePresentKHR(_graphicsQueue, &presentInfo);
 
-    if (presentResult == VK_ERROR_OUT_OF_DATE_KHR) {
-        resizeRequested = true;
-    }
-
+    //increase the number of frames drawn
     _frameNumber++;
 }
 
@@ -800,7 +792,7 @@ void VulkanEngine::initTrianglePipeline() {
 
     // connect the draw image
     pipelineBuilder.setColorAttachmentFormat(_drawImage.imageFormat);
-    pipelineBuilder.setDepthFormat(VK_FORMAT_UNDEFINED);
+    pipelineBuilder.setDepthFormat(VK_FORMAT_D32_SFLOAT);
 
     //finally build the pipeline
     _trianglePipeline = pipelineBuilder.buildPipeline(_device);
@@ -817,15 +809,13 @@ void VulkanEngine::initTrianglePipeline() {
 
 void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
-/*
+
     //begin a render pass  connected to our draw image
     VkRenderingAttachmentInfo colorAttachment = VkInit::attachmentInfo(_drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
     VkRenderingAttachmentInfo depthAttachment = VkInit::depthAttachmentInfo(_depthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
 
     calledNum++;
-
-    spdlog::info("frame {}, call count {}", _frameNumber, calledNum);
 
     VkRenderingInfo renderInfo = VkInit::renderingInfo(_drawExtent, &colorAttachment, &depthAttachment);
     vkCmdBeginRendering(cmd, &renderInfo);
@@ -855,9 +845,9 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
 
     getCurrentFrame()._deletionQueue.pushFunction([=, this]() {
-        spdlog::info("Frame: {}", _frameNumber);
 
         destroyBuffer(gpuSceneBufferData);
+
     });
 
     //write the buffer
@@ -889,7 +879,7 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
         vkCmdDrawIndexed(cmd,draw.indexCount,1, draw.firstIndex,0,0);
     }
 
-    vkCmdEndRendering(cmd);*/
+    vkCmdEndRendering(cmd);
 }
 
 AllocatedBuffer VulkanEngine::createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {

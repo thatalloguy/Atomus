@@ -219,3 +219,17 @@ VkRenderingAttachmentInfo VkInit::depthAttachmentInfo(VkImageView view, VkImageL
     return depthAttachment;
 }
 
+VkPresentInfoKHR VkInit::presentInfo() {
+    VkPresentInfoKHR info = {};
+    info.sType =  VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    info.pNext = 0;
+
+    info.swapchainCount = 0;
+    info.pSwapchains = nullptr;
+    info.pWaitSemaphores = nullptr;
+    info.waitSemaphoreCount = 0;
+    info.pImageIndices = nullptr;
+
+    return info;
+}
+
