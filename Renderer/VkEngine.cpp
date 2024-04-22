@@ -1330,7 +1330,7 @@ void GLTFMetallic_roughness::buildPipelines(VulkanEngine *engine) {
 
     pipelineBuilder.enableDepthtest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-    transparentPipline.pipeline = nullptr;//pipelineBuilder.buildPipeline(engine->_device);
+    transparentPipline.pipeline = pipelineBuilder.buildPipeline(engine->_device);
 
     vkDestroyShaderModule(engine->_device, meshFragShader, nullptr);
     vkDestroyShaderModule(engine->_device, meshVertexShader, nullptr);
