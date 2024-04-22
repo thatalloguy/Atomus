@@ -137,7 +137,6 @@ void VulkanEngine::CleanUp()
         vkDeviceWaitIdle(_device);
 
 
-        _mainDeletionQueue.flush();
 
         for (int i=0; i < FRAME_OVERLAP; i++) {
             vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
@@ -146,8 +145,11 @@ void VulkanEngine::CleanUp()
             vkDestroyFence(_device, _frames[i]._renderFence, nullptr);
             vkDestroySemaphore(_device, _frames[i]._renderSemaphore, nullptr);
             vkDestroySemaphore(_device, _frames[i]._swapchainSemaphore, nullptr);
+
+            _frames[i]._deletionQueue.flush();
         }
 
+        _mainDeletionQueue.flush();
 
         destroySwapchain();
 
@@ -871,13 +873,16 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
         vkCmdBindIndexBuffer(cmd, draw.indexBuffer,0,VK_INDEX_TYPE_UINT32);
 
-        GPUDrawPushConstants pushConstants;
+        GPUDrawPushConstants pushConstants{};
         pushConstants.vertexBuffer = draw.vertexBufferAddress;
         pushConstants.worldMatrix = draw.transform;
         vkCmdPushConstants(cmd, draw.material->pipeline->layout ,VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(GPUDrawPushConstants), &pushConstants);
 
         vkCmdDrawIndexed(cmd,draw.indexCount,1, draw.firstIndex,0,0);
     }
+
+
+
 
     vkCmdEndRendering(cmd);
 }
