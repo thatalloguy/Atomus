@@ -60,8 +60,8 @@ void VulkanEngine::Init() {
         initDescriptors();
 
         initPipelines();
-        initImGui();
 
+        initImGui();
         initDefaultData();
         _isInitialized = true;
     }
@@ -212,7 +212,7 @@ void VulkanEngine::Draw()
     VkUtil::transitionImage(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
 
-    drawGeometry(cmd);
+   // drawGeometry(cmd);
 
     //Transition the draw image (and swapchain image) into the correct transfer layours
     VkUtil::transitionImage(cmd, _drawImage.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -376,9 +376,11 @@ void VulkanEngine::initVulkan() {
     features.dynamicRendering = true;
     features.synchronization2 = true;
 
+
     VkPhysicalDeviceVulkan12Features features12{};
     features12.bufferDeviceAddress = true;
     features12.descriptorIndexing = true;
+
 
     // select a GPU that can write to glfw and supports vulkan 1.3
     vkb::PhysicalDeviceSelector selector{ vkb_inst};
@@ -561,7 +563,7 @@ void VulkanEngine::destroySwapchain() {
 
 void VulkanEngine::initPipelines() {
     initBackgroundPipelines();
-    initTrianglePipeline();
+    //initTrianglePipeline();
     initMeshPipeline();
 
     metalRoughMaterial.buildPipelines(this);
@@ -635,6 +637,8 @@ void VulkanEngine::initBackgroundPipelines() {
 
 //add the 2 background effects into the array
     backgroundEffects.push_back(gradient);
+
+
     backgroundEffects.push_back(sky);
 
 //destroy structures properly
@@ -813,12 +817,15 @@ void VulkanEngine::initTrianglePipeline() {
 
 void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
-
-
-
+/*
     //begin a render pass  connected to our draw image
     VkRenderingAttachmentInfo colorAttachment = VkInit::attachmentInfo(_drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
     VkRenderingAttachmentInfo depthAttachment = VkInit::depthAttachmentInfo(_depthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+
+    calledNum++;
+
+    spdlog::info("frame {}, call count {}", _frameNumber, calledNum);
 
     VkRenderingInfo renderInfo = VkInit::renderingInfo(_drawExtent, &colorAttachment, &depthAttachment);
     vkCmdBeginRendering(cmd, &renderInfo);
@@ -846,7 +853,10 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
     AllocatedBuffer gpuSceneBufferData = createBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
+
     getCurrentFrame()._deletionQueue.pushFunction([=, this]() {
+        spdlog::info("Frame: {}", _frameNumber);
+
         destroyBuffer(gpuSceneBufferData);
     });
 
@@ -863,6 +873,8 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
     for (const RenderObject& draw : mainDrawContext.OpaqueSurfaces) {
 
+
+
         vkCmdBindPipeline(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline->pipeline);
         vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,draw.material->pipeline->layout, 0,1, &globalDescriptor,0,nullptr );
         vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,draw.material->pipeline->layout, 1,1, &draw.material->materialSet,0,nullptr );
@@ -872,12 +884,12 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
         GPUDrawPushConstants pushConstants;
         pushConstants.vertexBuffer = draw.vertexBufferAddress;
         pushConstants.worldMatrix = draw.transform;
-        vkCmdPushConstants(cmd,draw.material->pipeline->layout ,VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(GPUDrawPushConstants), &pushConstants);
+        vkCmdPushConstants(cmd, draw.material->pipeline->layout ,VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(GPUDrawPushConstants), &pushConstants);
 
-        vkCmdDrawIndexed(cmd,draw.indexCount,1,draw.firstIndex,0,0);
+        vkCmdDrawIndexed(cmd,draw.indexCount,1, draw.firstIndex,0,0);
     }
 
-    vkCmdEndRendering(cmd);
+    vkCmdEndRendering(cmd);*/
 }
 
 AllocatedBuffer VulkanEngine::createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
@@ -1008,6 +1020,7 @@ void VulkanEngine::initMeshPipeline() {
     //no blending
     pipelineBuilder.disableBlending();
 
+
     ///pipelineBuilder.disableDepthtest();
     pipelineBuilder.enableDepthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
@@ -1105,6 +1118,7 @@ void VulkanEngine::initDefaultData() {
         destroyBuffer(materialConstants);
 
     });
+
     testMeshes = VkLoader::loadGltfMeshes(this, "../../Assets/basicmesh.glb").value();
 
 
@@ -1122,6 +1136,13 @@ void VulkanEngine::initDefaultData() {
         loadedNodes[m->name] = std::move(newNode);
     }
 
+    _mainDeletionQueue.pushFunction([&](){
+        for (auto& mesh : testMeshes) {
+            destroyBuffer(mesh->meshBuffers.vertexBuffer);
+            destroyBuffer(mesh->meshBuffers.indexBuffer);
+        }
+    });
+
     _mainDeletionQueue.pushFunction([&]() {
         destroyImage(_blackImage);
         destroyImage(_whiteImage);
@@ -1131,19 +1152,6 @@ void VulkanEngine::initDefaultData() {
 
         vkDestroySampler(_device, _defaultSamplerLinear, nullptr);
         vkDestroySampler(_device, _defaultSamplerNearest, nullptr);
-/*
-
-
-        for (auto mesh : testMeshes) {
-            destroyBuffer(mesh->meshBuffers.vertexBuffer);
-            destroyBuffer(mesh->meshBuffers.indexBuffer);
-        }
-
-
-        destroyBuffer(rectangle.vertexBuffer);
-        destroyBuffer(rectangle.indexBuffer);
-        */
-
 
     });
 

@@ -124,6 +124,7 @@ namespace VkLoader {
             //TODO DONT FORGET TO DELETE THIS!!!!!
             newMesh.meshBuffers = engine->uploadMesh(indices, vertices);
 
+
             meshes.emplace_back(std::make_shared<MeshAsset>(std::move(newMesh)));
         }
 
