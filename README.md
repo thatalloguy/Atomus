@@ -23,7 +23,7 @@ My personal vulkan renderer
 - [x] Textures
 - [x] Engine Architecture
 - [x] Materials
-- [ ] Meshes & camera
+- [x] Meshes & camera
 -
 - [ ] Interactive Camera
 - [ ] GLTF scene nodes.
