@@ -2,7 +2,6 @@
 // Created by allos on 4/23/2024.
 //
 #pragma once
-#include <glfw/glfw3.h>
 #include "VkTypes.h"
 
 
@@ -23,5 +22,9 @@ public:
     void processEvent(GLFWwindow* window);
 
     void update();
+
+private:
+    double lastY = 0;
+    double lastX = 0;
 };
 

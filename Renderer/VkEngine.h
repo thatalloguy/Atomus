@@ -14,6 +14,7 @@
 #include "VkTypes.h"
 #include "VkDescriptors.h"
 #include "VkLoader.h"
+#include "Camera.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -153,6 +154,8 @@ class VulkanEngine {
 
         VkExtent2D _windowExtent{1280, 720};
         GLFWwindow* _window{ nullptr };
+
+        Camera maimCamera;
 
         //Vulkan types
         VkInstance _instance;

@@ -3,17 +3,39 @@
 //
 
 #include "Camera.h"
+#include <glm/gtx/quaternion.hpp>
+#include <glm/detail/type_quat.hpp>
+#include <glm/ext/quaternion_trigonometric.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
 glm::mat4 Camera::getViewMatrix() {
+    glm::mat4 matrix = glm::translate(glm::mat4(1.f), position);
+    return glm::inverse(matrix);
 
 }
 
 glm::mat4 Camera::getRotationMatrix() {
 
+    //TODO missing Roll
+
+    glm::quat pitchRot = glm::angleAxis(pitch, glm::vec3{1.f, 0.f, 0.f});
+    glm::quat yawRot = glm::angleAxis(yaw, glm::vec3{0.f, -1.f, 0.f});
+
+    return glm::toMat4(yawRot) * glm::toMat4(pitchRot);
 }
 
 void Camera::processEvent(GLFWwindow *window) {
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) { velocity.z = -1; }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) { velocity.z =  1; }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) { velocity.x = -1; }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) { velocity.x =  1; }
 
+    double xPos, yPos;
+    glfwGetCursorPos(window, &xPos, &yPos);
+    yaw += (float) (xPos - lastX) / 200.0f;
+    pitch -= (float) (yPos - lastY) / 200.0f;
+    lastX = xPos;
+    lastY = yPos;
 }
 
 void Camera::update() {

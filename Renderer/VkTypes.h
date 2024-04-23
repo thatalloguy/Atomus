@@ -22,7 +22,7 @@
 
 
 #define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include <glfw/glfw3.h>
 #include <chrono>
 
 #include <thread>
@@ -36,6 +36,8 @@
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
+#include <glm/glm.hpp>
+#include <glm/common.hpp>
 
 
 //TODO add documentation
