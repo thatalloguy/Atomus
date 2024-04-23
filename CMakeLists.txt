@@ -49,6 +49,8 @@ add_executable(AtomusVulkan ${IMGUI_SOURCE} ${FASTGLTF_DEPS} main.cpp
         Renderer/VkLoader.h
         Renderer/VkTypes.h
         Renderer/VkInitializers.cpp
+        Renderer/Camera.cpp
+        Renderer/Camera.h
 
 
 )

@@ -1337,7 +1337,7 @@ void GLTFMetallic_roughness::buildPipelines(VulkanEngine *engine) {
 }
 
 void GLTFMetallic_roughness::clearResources(VkDevice device) {
-
+        ///EMPTY?
 }
 
 MaterialInstance GLTFMetallic_roughness::writeMaterial(VkDevice device, MaterialPass pass,
