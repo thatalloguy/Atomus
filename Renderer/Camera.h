@@ -7,13 +7,17 @@
 
 class Camera {
 public:
-    glm::vec3 velocity;
-    glm::vec3 position;
+    glm::vec3 velocity{0, 0, 0};
+    glm::vec3 position{0, 0, 0};
 
     //vertical rotation
     float pitch { 0.f };
     // horizontal rotation
     float yaw { 0.f };
+
+    float fov{ 90.f};
+    float near{0.1f};
+    float far{10000.f};
 
     glm::mat4 getViewMatrix();
     glm::mat4 getRotationMatrix();

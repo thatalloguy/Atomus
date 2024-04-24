@@ -155,7 +155,7 @@ class VulkanEngine {
         VkExtent2D _windowExtent{1280, 720};
         GLFWwindow* _window{ nullptr };
 
-        Camera maimCamera;
+        Camera mainCamera;
 
         //Vulkan types
         VkInstance _instance;

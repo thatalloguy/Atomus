@@ -64,6 +64,8 @@ void VulkanEngine::Init() {
         initImGui();
         initDefaultData();
         _isInitialized = true;
+
+        //mainCamera.position.z = 5;
     }
 
 }
@@ -289,6 +291,8 @@ void VulkanEngine::Run()
                 resizeSwapchain();
             }
 
+            mainCamera.processEvent(_window);
+
             // Imgui
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -298,10 +302,10 @@ void VulkanEngine::Run()
             if (ImGui::Begin("Background")) {
                 ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
 
-                ImGui::Text("Selected Effect: %s", selected.name);
 
-                ImGui::SliderInt("Effect Index", &currentBackgroundEffect, 0, backgroundEffects.size() - 1);
                 if (ImGui::TreeNode("Background")) {
+                    ImGui::Text("Selected Effect: %s", selected.name);
+                    ImGui::SliderInt("Effect Index", &currentBackgroundEffect, 0, backgroundEffects.size() - 1);
                     ImGui::InputFloat4("data1", (float*)& selected.data.data1);
                     ImGui::InputFloat4("data2", (float*)& selected.data.data2);
                     ImGui::InputFloat4("data3", (float*)& selected.data.data3);
@@ -312,9 +316,15 @@ void VulkanEngine::Run()
 
 
                 ImGui::Spacing();
-                ImGui::Separator();
+                ImGui::SeparatorText("Camera Info");
 
-                //ImGui::DragFloat3("Pos", (float*) &monkeyPos, 0.1f, -20.0f, 20.0f);
+                ImGui::DragFloat3("Pos", (float*)& mainCamera.position);
+                ImGui::DragFloat3("Vel", (float*)& mainCamera.velocity);
+                ImGui::DragFloat("Pitch", &mainCamera.pitch);
+                ImGui::DragFloat("Yaw", &mainCamera.yaw);
+                ImGui::DragFloat("FOV", &mainCamera.fov);
+                ImGui::DragFloat("near", &mainCamera.near);
+                ImGui::DragFloat("far", &mainCamera.far);
 
                 ImGui::End();
             }
@@ -1245,16 +1255,18 @@ void VulkanEngine::destroyImage(const AllocatedImage &img) {
 }
 
 void VulkanEngine::updateScene() {
+    mainCamera.update();
+
     mainDrawContext.OpaqueSurfaces.clear();
 
     loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);
 
-    sceneData.view = glm::mat4{1.f};
+    sceneData.view = glm::translate(glm::mat4{1.f}, mainCamera.position);//glm::lookAt(mainCamera.position, mainCamera.position, glm::vec3(0, -1.f, 0));
 
-    sceneData.proj = glm::mat4{1.f};
+    sceneData.proj = glm::perspective(glm::radians(mainCamera.fov), (float)_windowExtent.width / (float)_windowExtent.height, mainCamera.near, mainCamera.far);
 
 
-    sceneData.proj[1][1] *= -1;
+    //sceneData.proj[1][1] *= -1;
     sceneData.viewproj = sceneData.view * sceneData.proj;
 
     //some default lighting parameters
