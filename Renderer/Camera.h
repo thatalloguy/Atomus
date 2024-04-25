@@ -10,10 +10,12 @@ public:
     glm::vec3 velocity{0, 0, 0};
     glm::vec3 position{0, 0, 0};
 
-    //vertical rotation
+    //vertical rotation / y
     float pitch { 0.f };
-    // horizontal rotation
+    // horizontal rotation / x
     float yaw { 0.f };
+    // z //TODO impl this
+    float roll{0.f};
 
     float fov{ 90.f};
     float near{0.1f};
@@ -28,6 +30,8 @@ public:
     void update();
 
 private:
+
+
     double lastY = 0;
     double lastX = 0;
 };

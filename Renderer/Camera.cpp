@@ -13,18 +13,17 @@
 glm::mat4 Camera::getViewMatrix() {
     glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.f), position);
     glm::mat4 cameraRotation = getRotationMatrix();
-    return glm::inverse(cameraTranslation);// * cameraRotation);
-    //return glm::mat4(1.f);
+    return glm::inverse(cameraTranslation * cameraRotation);
 }
 
 glm::mat4 Camera::getRotationMatrix() {
 
     //TODO missing Roll
 
-    glm::quat pitchRot = glm::angleAxis(pitch, glm::vec3{1.f, 0.f, 0.f});
-    glm::quat yawRot = glm::angleAxis(yaw, glm::vec3{0.f, -1.f, 0.f});
+    glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3 { -1.f, 0.f, 0.f });
+    glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3 { 0.f, -1.f, 0.f });
 
-    return glm::toMat4(yawRot) * glm::toMat4(pitchRot);
+    return glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
 }
 
 void Camera::processEvent(GLFWwindow *window) {
@@ -35,15 +34,15 @@ void Camera::processEvent(GLFWwindow *window) {
 
     double xPos, yPos;
     glfwGetCursorPos(window, &xPos, &yPos);
-    yaw += (float) (xPos - lastX) / 200.0f;
-    pitch -= (float) (yPos - lastY) / 200.0f;
+    //yaw += (float) (xPos - lastX) / 1000.0f;
+    //pitch -= (float) (yPos - lastY) / 1000.0f;
     lastX = xPos;
     lastY = yPos;
 }
 
 void Camera::update() {
     glm::mat4 cameraRotation = getRotationMatrix();
-    position += velocity;//glm::vec3(cameraRotation * glm::vec4(velocity * 0.5f, 0.f));
+    position += glm::vec3(cameraRotation * glm::vec4(velocity * 0.5f, 0.f));
     velocity.x = 0;
     velocity.y = 0;
     velocity.z = 0;
