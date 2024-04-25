@@ -154,7 +154,7 @@ class VulkanEngine {
 
         VkExtent2D _windowExtent{1280, 720};
         GLFWwindow* _window{ nullptr };
-
+        float renderScale = 1.f;
         Camera mainCamera;
 
         //Vulkan types
