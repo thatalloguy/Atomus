@@ -360,6 +360,23 @@ namespace VkLoader {
 
             newMesh->meshBuffers = engine->uploadMesh(indices, vertices);
         }
+
+
+        for (fastgltf::Node& node : gltf.nodes) {
+            std::shared_ptr<Node> newNode;
+
+            //find if the node has a mesh.
+            if (node.meshIndex.has_value()) {
+                newNode = std::make_shared<MeshNode>();
+                static_cast<MeshNode*>(newNode.get())->mesh = meshes[*node.meshIndex];
+            } else {
+                newNode = std::make_shared<Node>();
+            }
+
+            nodes.push_back(newNode);
+
+            file.nodes[node.name.c_str()];
+        }
     }
 
     VkFilter extractFilter(fastgltf::Filter filter) {
