@@ -197,6 +197,26 @@ namespace VkLoader {
 
             file.samplers.push_back(newSampler);
         }
+
+        // temp arrays for all the objects
+        std::vector<std::shared_ptr<MeshAsset>>    meshes;
+        std::vector<std::shared_ptr<Node>>         nodes;
+        std::vector<AllocatedImage>                images;
+        std::vector<std::shared_ptr<GLTFMaterial>> materials;
+
+        //load all images
+
+        for (fastgltf::Image& image : gltf.images) {
+
+            images.push_back(engine->_errorImage);
+        }
+
+        //create buffer for holding the material info
+        file.materialDataBuffer = engine->createBuffer(sizeof(GLTFMetallic_roughness::MaterialConstants) * gltf.materials.size(),
+                                                       VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        int data_index = 0;
+        GLTFMetallic_roughness::MaterialConstants* sceneMaterialConstants = (GLTFMetallic_roughness::MaterialConstants*) file.materialDataBuffer.info.pMappedData;
+
     }
 
     VkFilter extractFilter(fastgltf::Filter filter) {

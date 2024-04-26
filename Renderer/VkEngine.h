@@ -209,7 +209,8 @@ class VulkanEngine {
         void Draw();
         void Run();
 
-    private:
+    AllocatedImage _errorImage;
+private:
         void initVulkan();
         void initSwapchain();
         void initCommands();
@@ -256,9 +257,8 @@ class VulkanEngine {
         AllocatedImage _whiteImage;
         AllocatedImage _blackImage;
         AllocatedImage _greyImage;
-        AllocatedImage _errorImage;
 
-        VkSampler _defaultSamplerLinear;
+    VkSampler _defaultSamplerLinear;
         VkSampler _defaultSamplerNearest;
 
         MaterialInstance defaultData;
