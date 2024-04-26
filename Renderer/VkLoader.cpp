@@ -348,7 +348,17 @@ namespace VkLoader {
                                                                       vertices[initial_vtx + index].color = v;
                                                                   });
                 }
+
+                if (p.materialIndex.has_value()) {
+                    newSurface.material = materials[p.materialIndex.value()];
+                } else {
+                    newSurface.material = materials[0];
+                }
+
+                newMesh->surfaces.push_back(newSurface);
             }
+
+            newMesh->meshBuffers = engine->uploadMesh(indices, vertices);
         }
     }
 
