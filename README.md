@@ -29,7 +29,10 @@ My personal vulkan renderer
 - [x] GLTF scene nodes.
 - [ ] GLTF textures
 - [ ] Faster draw
--
+
+##### Known bugs
+-[ ] Perspective gets stretched when rotating
+-[ ] LoadGLTF has vector out of sub range
 
 ### How to use
 
