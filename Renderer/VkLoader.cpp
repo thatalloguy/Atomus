@@ -318,6 +318,36 @@ namespace VkLoader {
                 }
 
                 // load normals
+                auto normals = p.findAttribute("NORMAL");
+                if (normals != p.attributes.end()) {
+
+                    fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf,
+                                                                  gltf.accessors[(*normals).second],
+                          [&](glm::vec3 v, size_t index){
+                                    vertices[initial_vtx + index].normal = v;
+                    });
+                }
+
+                //load uv's
+                auto uv = p.findAttribute("TEXCOORD_)");
+                if (uv != p.attributes.end()) {
+                    fastgltf::iterateAccessorWithIndex<glm::vec2>(gltf,
+                                                                  gltf.accessors[(*uv).second],
+                                                                  [&](glm::vec2 v, size_t index){
+                                                                      vertices[initial_vtx + index].uv_x = v.x;
+                                                                      vertices[initial_vtx + index].uv_y = v.y;
+                                                                  });
+                }
+
+                //load vertex colors
+                auto colors = p.findAttribute("COLOR_0");
+                if (colors != p.attributes.end()) {
+                    fastgltf::iterateAccessorWithIndex<glm::vec4>(gltf,
+                                                                  gltf.accessors[(*colors).second],
+                                                                  [&](glm::vec4 v, size_t index){
+                                                                      vertices[initial_vtx + index].color = v;
+                                                                  });
+                }
             }
         }
     }
