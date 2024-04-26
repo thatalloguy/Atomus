@@ -265,6 +265,42 @@ namespace VkLoader {
 
             data_index++;
         }
+
+        // use the same arrays for all meshes so that we dont reallocate as often :)
+
+        std::vector<uint32_t> indices;
+        std::vector<Vertex> vertices;
+
+        for (fastgltf::Mesh& mesh : gltf.meshes) {
+            std::shared_ptr<MeshAsset> newMesh = std::make_shared<MeshAsset>();
+            meshes.push_back(newMesh);
+
+            file.meshes[mesh.name.c_str()] = newMesh;
+            newMesh->name = mesh.name;
+
+            //clear the mesh arrays on each mesh, we dont want to merge them ;)
+            indices.clear();
+            vertices.clear();
+
+            for (auto&& p : mesh.primitives) {
+                GeoSurface newSurface;
+                newSurface.startIndex = (uint32_t)indices.size();
+                newSurface.count = (uint32_t) gltf.accessors[p.indicesAccessor.value()].count;
+
+                size_t initial_vtx = vertices.size();
+
+                //load indexes
+                {
+                    fastgltf::Accessor& indexAcessor = gltf.accessors[p.indicesAccessor.value()];
+                    indices.reserve(indices.size() + indexAcessor.count);
+
+                    fastgltf::iterateAccessor<std::uint32_t>(gltf, indexAcessor,
+                                                             [&](std::uint32_t idx) {
+                        indices.push_back(idx + initial_vtx);
+                    });
+                }
+            }
+        }
     }
 
     VkFilter extractFilter(fastgltf::Filter filter) {
