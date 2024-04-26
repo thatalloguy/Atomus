@@ -180,4 +180,21 @@ namespace VkLoader {
 
         file.descriptorPool.init(engine->_device, gltf.materials.size(), sizes);
     }
+
+    VkFilter extractFilter(fastgltf::Filter filter) {
+        switch (filter) {
+            //nearest samplers
+            case fastgltf::Filter::Nearest:
+            case fastgltf::Filter::NearestMipMapNearest:
+            case fastgltf::Filter::NearestMipMapLinear:
+                return VK_FILTER_LINEAR;
+
+            // linear samplers
+            case fastgltf::Filter::Linear:
+            case fastgltf::Filter::LinearMipMapNearest:
+            case fastgltf::Filter::LinearMipMapLinear:
+            default:
+                return VK_FILTER_LINEAR;
+        }
+    }
 }
