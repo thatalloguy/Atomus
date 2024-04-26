@@ -136,5 +136,48 @@ namespace VkLoader {
         std::shared_ptr<LoadedGLTF> scene = std::make_shared<LoadedGLTF>();
         scene->creator = engine;
         LoadedGLTF& file = *scene.get();
+
+        fastgltf::Parser parser{};
+
+        constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble | fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers;
+        // fastgltf::Options::LoadExternalImages;
+
+        fastgltf::GltfDataBuffer data;
+        data.loadFromFile(filePath);
+
+        fastgltf::Asset gltf;
+
+        std::filesystem::path path = filePath;
+
+        auto type = fastgltf::determineGltfFileType(&data);
+        if (type == fastgltf::GltfType::glTF) {
+            auto load = parser.loadGltf(&data, path.parent_path(), gltfOptions);
+            if (load) {
+                gltf = std::move(load.get());
+            } else {
+                spdlog::error("Failed to load gltf file: {} | reason: {}", filePath, fastgltf::to_underlying(load.error()));
+                return {};
+            }
+        } else if (type == fastgltf::GltfType::GLB) {
+            auto load = parser.loadGltfBinary(&data, path.parent_path(), gltfOptions);
+            if (load) {
+                gltf = std::move(load.get());
+            } else {
+                spdlog::error("Failed to load gltf file: {} | reason: {}", filePath, fastgltf::to_underlying(load.error()));
+                return {};
+            }
+        } else {
+            spdlog::error("Failed to determine GLTF container");
+            return {};
+        }
+
+
+        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes {
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3},
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}
+        };
+
+        file.descriptorPool.init(engine->_device, gltf.materials.size(), sizes);
     }
 }
