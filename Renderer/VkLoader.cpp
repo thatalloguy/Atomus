@@ -179,6 +179,24 @@ namespace VkLoader {
         };
 
         file.descriptorPool.init(engine->_device, gltf.materials.size(), sizes);
+
+        //load samplers
+        for (fastgltf::Sampler& sampler : gltf.samplers) {
+
+            VkSamplerCreateInfo sampl { .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};
+            sampl.maxLod = VK_LOD_CLAMP_NONE;
+            sampl.minLod = 0;
+
+            sampl.magFilter = extractFilter(sampler.magFilter.value_or(fastgltf::Filter::Nearest));
+            sampl.minFilter = extractFilter(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
+
+            sampl.mipmapMode = extractMipmapMode(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
+
+            VkSampler newSampler;
+            VK_CHECK(vkCreateSampler(engine->_device, &sampl, nullptr, &newSampler));
+
+            file.samplers.push_back(newSampler);
+        }
     }
 
     VkFilter extractFilter(fastgltf::Filter filter) {
