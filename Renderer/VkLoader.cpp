@@ -130,7 +130,7 @@ namespace VkLoader {
         return meshes;
     }
 
-    std::optional<std::shared_ptr<MeshAsset>> loadGltf(VulkanEngine *engine, std::string_view filePath) {
+    std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine *engine, std::string_view filePath) {
         spdlog::info("Loading GLTF file: {}", filePath);
 
         std::shared_ptr<LoadedGLTF> scene = std::make_shared<LoadedGLTF>();
@@ -163,7 +163,7 @@ namespace VkLoader {
             if (load) {
                 gltf = std::move(load.get());
             } else {
-                spdlog::error("Failed to load gltf file: {} | reason: {}", filePath, fastgltf::to_underlying(load.error()));
+                spdlog::error("Failed to load gltf file: {} | reason: {}", filePath, getErrorMessage(load.error()));
                 return {};
             }
         } else {
@@ -374,7 +374,6 @@ namespace VkLoader {
             }
 
             nodes.push_back(newNode);
-
             file.nodes[node.name.c_str()];
 
             std::visit(fastgltf::visitor { [&](fastgltf::Node::TransformMatrix matrix){
@@ -395,7 +394,7 @@ namespace VkLoader {
                        node.transform);
 
 
-            for (int i = 0; i <gltf.nodes.size(); i++) {
+            for (int i = 0; i < gltf.nodes.size(); i++) {
                 fastgltf::Node& node = gltf.nodes[i];
                 std::shared_ptr<Node>& sceneNode = nodes[i];
 
@@ -445,4 +444,40 @@ namespace VkLoader {
                 return VK_SAMPLER_MIPMAP_MODE_LINEAR;
         }
     }
+}
+
+void LoadedGLTF::Draw(const glm::mat4 &topMatrix, DrawContext &ctx) {
+    for (auto& n : topNodes) {
+        n->Draw(topMatrix, ctx);
+    }
+}
+
+void LoadedGLTF::clearAll() {
+    VkDevice dv = creator->_device;
+
+    for (auto& [k, v] : meshes) {
+
+        creator->destroyBuffer(v->meshBuffers.indexBuffer);
+        creator->destroyBuffer(v->meshBuffers.vertexBuffer);
+    }
+
+    for (auto& [k, v] : images) {
+
+        if (v.image == creator->_errorImage.image) {
+            // dont destroy the default images
+            continue;
+        }
+        creator->destroyImage(v);
+    }
+
+    for (auto& sampler : samplers) {
+        vkDestroySampler(dv, sampler, nullptr);
+    }
+
+    auto materialBuffer = materialDataBuffer;
+    auto samplersToDestroy = samplers;
+
+    descriptorPool.destroyPools(dv);
+
+    creator->destroyBuffer(materialBuffer);
 }

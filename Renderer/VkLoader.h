@@ -106,6 +106,7 @@ struct LoadedGLTF : public IRenderable {
     virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx);
 
 private:
+    //TODO do this
     void clearAll();
 };
 
@@ -113,7 +114,7 @@ private:
 namespace VkLoader {
 
     std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltfMeshes(VulkanEngine *engine, std::filesystem::path filePath);
-    std::optional<std::shared_ptr<MeshAsset>> loadGltf(VulkanEngine *engine, std::string_view filePath);
+    std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine *engine, std::string_view filePath);
     VkFilter extractFilter(fastgltf::Filter filter);
     VkSamplerMipmapMode extractMipmapMode(fastgltf::Filter filter);
 }

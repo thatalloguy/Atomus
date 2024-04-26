@@ -61,9 +61,20 @@ void VulkanEngine::Init() {
 
         initPipelines();
 
+
         initImGui();
         initDefaultData();
+
+
+        std::string structurePath = {"..//..//Assets/structure.glb"};
+        auto structureFile = VkLoader::loadGltf(this, structurePath);
+
+        assert(structureFile.has_value());
+
+        loadedScenes["structure"] = *structureFile;
+
         _isInitialized = true;
+
 
         //mainCamera.position.z = 5;
     }
@@ -138,7 +149,7 @@ void VulkanEngine::CleanUp()
         spdlog::info("Destroying current loaded engine");
         vkDeviceWaitIdle(_device);
 
-
+        loadedScenes.clear();
 
         for (int i=0; i < FRAME_OVERLAP; i++) {
             vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);
@@ -1282,7 +1293,8 @@ void VulkanEngine::updateScene() {
     sceneData.sunlightColor = glm::vec4(1.f);
     sceneData.sunLightDirection = glm::vec4(0,1,0.5,1.f);
 
-    loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);
+    //loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);
+    loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
 }
 
 

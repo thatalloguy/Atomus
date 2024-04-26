@@ -222,6 +222,8 @@ class VulkanEngine {
         AllocatedImage _errorImage;
 
         AllocatedImage _whiteImage;
+
+        std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
 private:
         void initVulkan();
         void initSwapchain();
