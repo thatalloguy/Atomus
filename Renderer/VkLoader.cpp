@@ -246,8 +246,24 @@ namespace VkLoader {
             materialResources.metalRoughImage = engine->_whiteImage;
             materialResources.metalRoughSampler = engine->_defaultSamplerLinear;
 
-            //set the unfirom buf for the mat data;
+            //set the uniform buf for the mat data;
+            materialResources.dataBuffer = file.materialDataBuffer.buffer;
+            materialResources.dataBufferOffset = data_index * sizeof(GLTFMetallic_roughness::MaterialConstants);
 
+            //grab textures from gltf file
+            if (mat.pbrData.baseColorTexture.has_value()) {
+                //yoink
+                size_t img = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
+                size_t sampler = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
+
+                materialResources.colorImage = images[img];
+                materialResources.colorSampler = file.samplers[sampler];
+            }
+
+            //build material
+            newMat->data = engine->metalRoughMaterial.writeMaterial(engine->_device, passType, materialResources, file.descriptorPool);
+
+            data_index++;
         }
     }
 
