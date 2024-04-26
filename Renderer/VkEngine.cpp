@@ -193,8 +193,8 @@ void VulkanEngine::Draw()
         return;
     }
 
-    _drawExtent.height = std::min(_swapchainExtent.height, _drawImage.imageExtent.height) * renderScale;
-    _drawExtent.width = std::min(_swapchainExtent.width, _drawImage.imageExtent.width) * renderScale;
+    _drawExtent.height = (float) std::min(_swapchainExtent.height, _drawImage.imageExtent.height) * renderScale;
+    _drawExtent.width = (float) std::min(_swapchainExtent.width, _drawImage.imageExtent.width) * renderScale;
 
     VK_CHECK(vkResetFences(_device, 1, &getCurrentFrame()._renderFence));
 
@@ -558,6 +558,8 @@ void VulkanEngine::createSwapchain(uint32_t width, uint32_t height) {
             .value();
 
     _swapchainExtent = vkbSwapchain.extent;
+    _drawExtent.width = _swapchainExtent.width;
+    _drawExtent.height = _swapchainExtent.height;
 
     // Store swapchain and it's related images
     _swapchain = vkbSwapchain.swapchain;
@@ -1269,7 +1271,7 @@ void VulkanEngine::updateScene() {
 
 
     sceneData.view = glm::inverse(glm::translate(glm::mat4{1.f}, mainCamera.position) * mainCamera.getRotationMatrix());
-    sceneData.proj = glm::perspective(glm::radians(mainCamera.fov), (float)_drawExtent.width / (float)_drawExtent.height, 0.1f, 10000000.0f );
+    sceneData.proj = glm::perspective(glm::radians(mainCamera.fov),(float) (1280 / 720), 0.1f, 10000000.0f );
 
 
     sceneData.proj[1][1] *= -1;

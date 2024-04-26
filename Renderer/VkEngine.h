@@ -152,7 +152,7 @@ class VulkanEngine {
         int _frameNumber{0};
         bool _stopRendering{ false };
 
-        VkExtent2D _windowExtent{1280, 720};
+        VkExtent2D _windowExtent{800, 600};
         GLFWwindow* _window{ nullptr };
         float renderScale = 1.f;
         Camera mainCamera;
