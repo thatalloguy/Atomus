@@ -299,6 +299,25 @@ namespace VkLoader {
                         indices.push_back(idx + initial_vtx);
                     });
                 }
+
+                //load vertex positions;
+                {
+                    fastgltf::Accessor& posAccessor = gltf.accessors[p.findAttribute("POSITION")->second];
+                    vertices.resize(vertices.size() + posAccessor.count);
+
+                    fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, posAccessor,
+                                        [&](glm::vec3 v, size_t index){
+                                    Vertex newVtx;
+                                    newVtx.position = v;
+                                    newVtx.normal = {1, 0, 0};
+                                    newVtx.color = glm::vec4{1.f};
+                                    newVtx.uv_x = 0;
+                                    newVtx.uv_y = 0;
+                                    vertices[initial_vtx + index] = newVtx;
+                    });
+                }
+
+                // load normals
             }
         }
     }
