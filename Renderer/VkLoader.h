@@ -115,4 +115,5 @@ namespace VkLoader {
     std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltfMeshes(VulkanEngine *engine, std::filesystem::path filePath);
     std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltf(VulkanEngine *engine, std::string_view filePath);
     VkFilter extractFilter(fastgltf::Filter filter);
+    VkSamplerMipmapMode extractMipmapMode(fastgltf::Filter filter);
 }
