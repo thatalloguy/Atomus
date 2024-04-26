@@ -130,7 +130,7 @@ namespace VkLoader {
         return meshes;
     }
 
-    std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltf(VulkanEngine *engine, std::string_view filePath) {
+    std::optional<std::shared_ptr<MeshAsset>> loadGltf(VulkanEngine *engine, std::string_view filePath) {
         spdlog::info("Loading GLTF file: {}", filePath);
 
         std::shared_ptr<LoadedGLTF> scene = std::make_shared<LoadedGLTF>();
@@ -393,6 +393,26 @@ namespace VkLoader {
                     newNode->localTransform = tm * rm * sm;
                 } },
                        node.transform);
+
+
+            for (int i = 0; i <gltf.nodes.size(); i++) {
+                fastgltf::Node& node = gltf.nodes[i];
+                std::shared_ptr<Node>& sceneNode = nodes[i];
+
+                for (auto& c : node.children) {
+                    sceneNode->childern.push_back(nodes[c]);
+                    nodes[c]->parent = sceneNode;
+                }
+            }
+
+            for (auto& node : nodes) {
+                if (node->parent.lock() == nullptr) {
+                    file.topNodes.push_back(node);
+                    node->refreshTransform(glm::mat4{1.f});
+                }
+            }
+
+            return scene;
         }
     }
 
