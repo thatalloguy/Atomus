@@ -31,8 +31,8 @@ My personal vulkan renderer
 - [ ] Faster draw
 
 ##### Known bugs
--[ ] Perspective gets stretched when rotating
--[ ] LoadGLTF has vector out of sub range
+- [ ] Perspective gets stretched when rotating
+- [ ] LoadGLTF has vector out of sub range
 
 ### How to use
 
