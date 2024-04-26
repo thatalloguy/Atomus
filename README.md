@@ -25,7 +25,7 @@ My personal vulkan renderer
 - [x] Materials
 - [x] Meshes & camera
 -
-- [ ] Interactive Camera
+- [x] Interactive Camera
 - [ ] GLTF scene nodes.
 - [ ] GLTF textures
 - [ ] Faster draw
