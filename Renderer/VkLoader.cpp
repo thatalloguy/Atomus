@@ -217,6 +217,38 @@ namespace VkLoader {
         int data_index = 0;
         GLTFMetallic_roughness::MaterialConstants* sceneMaterialConstants = (GLTFMetallic_roughness::MaterialConstants*) file.materialDataBuffer.info.pMappedData;
 
+
+        for (fastgltf::Material& mat : gltf.materials) {
+            std::shared_ptr<GLTFMaterial> newMat = std::make_shared<GLTFMaterial>();
+            materials.push_back(newMat);
+
+            GLTFMetallic_roughness::MaterialConstants constants;
+            constants.colorFactors.x = mat.pbrData.baseColorFactor[0];
+            constants.colorFactors.y = mat.pbrData.baseColorFactor[1];
+            constants.colorFactors.z = mat.pbrData.baseColorFactor[2];
+            constants.colorFactors.w = mat.pbrData.baseColorFactor[3];
+
+            constants.metalRoughFactors.x = mat.pbrData.metallicFactor;
+            constants.metalRoughFactors.y = mat.pbrData.roughnessFactor;
+
+            //write material parameters to buffer
+            sceneMaterialConstants[data_index] = constants;
+
+            MaterialPass passType = MaterialPass::MainColor;
+            if (mat.alphaMode == fastgltf::AlphaMode::Blend) {
+                passType = MaterialPass::Transparent;
+            }
+
+            GLTFMetallic_roughness::MaterialResources materialResources;
+            // default material textures
+            materialResources.colorImage = engine->_whiteImage;
+            materialResources.colorSampler = engine->_defaultSamplerLinear;
+            materialResources.metalRoughImage = engine->_whiteImage;
+            materialResources.metalRoughSampler = engine->_defaultSamplerLinear;
+
+            //set the unfirom buf for the mat data;
+
+        }
     }
 
     VkFilter extractFilter(fastgltf::Filter filter) {

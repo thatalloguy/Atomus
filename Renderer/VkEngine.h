@@ -209,7 +209,19 @@ class VulkanEngine {
         void Draw();
         void Run();
 
-    AllocatedImage _errorImage;
+        AllocatedImage _blackImage;
+        AllocatedImage _greyImage;
+
+        VkSampler _defaultSamplerLinear;
+        VkSampler _defaultSamplerNearest;
+
+        MaterialInstance defaultData;
+        GLTFMetallic_roughness metalRoughMaterial;
+
+
+        AllocatedImage _errorImage;
+
+        AllocatedImage _whiteImage;
 private:
         void initVulkan();
         void initSwapchain();
@@ -252,17 +264,6 @@ private:
         void initMeshPipeline();
 
         bool resizeRequested = false;
-
-        // MORE TEMP RAHHH
-        AllocatedImage _whiteImage;
-        AllocatedImage _blackImage;
-        AllocatedImage _greyImage;
-
-    VkSampler _defaultSamplerLinear;
-        VkSampler _defaultSamplerNearest;
-
-        MaterialInstance defaultData;
-        GLTFMetallic_roughness metalRoughMaterial;
 
 
         void initDefaultData();
