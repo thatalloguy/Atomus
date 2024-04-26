@@ -121,7 +121,6 @@ namespace VkLoader {
                 }
             }
 
-            //TODO DONT FORGET TO DELETE THIS!!!!!
             newMesh.meshBuffers = engine->uploadMesh(indices, vertices);
 
 
@@ -129,5 +128,13 @@ namespace VkLoader {
         }
 
         return meshes;
+    }
+
+    std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltf(VulkanEngine *engine, std::string_view filePath) {
+        spdlog::info("Loading GLTF file: {}", filePath);
+
+        std::shared_ptr<LoadedGLTF> scene = std::make_shared<LoadedGLTF>();
+        scene->creator = engine;
+        LoadedGLTF& file = *scene.get();
     }
 }

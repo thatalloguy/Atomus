@@ -11,6 +11,7 @@
 #pragma once
 
 #include "VkTypes.h"
+#include "VkDescriptors.h"
 #include <unordered_map>
 #include <filesystem>
 
@@ -23,6 +24,16 @@
 
 
 class VulkanEngine;
+
+
+struct DrawContext;
+
+class IRenderable {
+    ///TODO define DrawContext
+    virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) = 0;
+};
+
+
 
 struct GLTFMaterial {
     MaterialInstance data;
@@ -42,9 +53,66 @@ struct MeshAsset {
     GPUMeshBuffers meshBuffers;
 };
 
+
+
+
+
+struct Node : public IRenderable {
+
+    std::weak_ptr<Node> parent;
+    std::vector<std::shared_ptr<Node>> childern;
+
+    glm::mat4 localTransform;
+    glm::mat4 worldTransform;
+
+    void refreshTransform(const glm::mat4& parentMatrix) {
+        worldTransform = parentMatrix * localTransform;
+        for (auto c : childern) {
+            c->refreshTransform(worldTransform);
+        }
+    }
+
+    virtual void Draw (const glm::mat4& topMatrix, DrawContext& ctx) {
+
+        for (auto& c : childern) {
+            c->Draw(topMatrix, ctx);
+        }
+    }
+};
+
+
+
+struct LoadedGLTF : public IRenderable {
+
+    //storage for all the data of a GLTF file
+    std::unordered_map<std::string, std::shared_ptr<MeshAsset>> meshes;
+    std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
+    std::unordered_map<std::string, AllocatedImage> images;
+    std::unordered_map<std::string, std::shared_ptr<GLTFMaterial>> materials;
+
+    //nodes that dont have a parent
+    std::vector<std::shared_ptr<Node>> topNodes;
+
+    std::vector<VkSampler> samplers;
+
+    DescriptorAllocatorGrowable descriptorPool;
+
+    AllocatedBuffer materialDataBuffer;
+
+    VulkanEngine* creator;
+
+    ~LoadedGLTF() { clearAll(); };
+
+    virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx);
+
+private:
+    void clearAll();
+};
+
+
 namespace VkLoader {
 
-    std::optional<std::vector<std::shared_ptr<MeshAsset>>>
-    loadGltfMeshes(VulkanEngine *engine, std::filesystem::path filePath);
+    std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltfMeshes(VulkanEngine *engine, std::filesystem::path filePath);
+    std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltf(VulkanEngine *engine, std::string_view filePath);
 
 }
