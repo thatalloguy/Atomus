@@ -474,8 +474,53 @@ namespace VkLoader {
                       }
 
                     },
-                }
-        );
+                    [&](fastgltf::sources::Vector& vector) {
+                        unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
+                                                                    &width, &height, &nrChannels, 4);
+                        if (data) {
+                            VkExtent3D imageSize;
+                            imageSize.width  = width;
+                            imageSize.height = height;
+                            imageSize.depth  = 1;
+
+                            newImage = engine->createImage(data, imageSize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+
+                            stbi_image_free(data);
+                        }
+                    },
+                    [&](fastgltf::sources::BufferView& view) {
+                        auto& bufferView = asset.bufferViews[view.bufferViewIndex];
+                        auto& buffer = asset.buffers[bufferView.bufferIndex];
+
+                        std::visit(fastgltf::visitor {
+
+                            [](auto& arg){},
+                            [&](fastgltf::sources::Vector& vector) {
+                                unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
+                                                                            static_cast<int>(bufferView.byteLength),
+                                                                            &width, &height, &nrChannels, 4);
+                                if (data) {
+                                    VkExtent3D imageSize;
+                                    imageSize.width  = width;
+                                    imageSize.height = height;
+                                    imageSize.depth  = 1;
+
+                                    newImage = engine->createImage(data, imageSize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+
+                                    stbi_image_free(data);
+                                }
+                            } },
+                                   buffer.data);
+                    },
+                },
+           image.data);
+
+        // if we fail at all just return null
+        if (newImage.image == VK_NULL_HANDLE) {
+            return {};
+        } else {
+            return newImage;
+        }
     }
 }
 
