@@ -208,7 +208,16 @@ namespace VkLoader {
 
         for (fastgltf::Image& image : gltf.images) {
 
-            images.push_back(engine->_errorImage);
+            std::optional<AllocatedImage> img = loadImage(engine, gltf, image);
+
+            if (img.has_value()) {
+                images.push_back(*img);
+                file.images[image.name.c_str()] = *img;
+            } else {
+                // we failed ;-;
+                images.push_back(engine->_errorImage);
+                spdlog::error("Failed to load texture {}", image.name.c_str());
+            }
         }
 
         //create buffer for holding the material info
