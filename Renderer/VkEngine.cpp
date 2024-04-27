@@ -944,7 +944,6 @@ void VulkanEngine::destroyBuffer(const AllocatedBuffer& buffer) {
 }
 
 GPUMeshBuffers VulkanEngine::uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices) {
-    spdlog::info("UploadingMesh!");
     const size_t vertexBufferSize = vertices.size() * sizeof(Vertex);
     const size_t indexBufferSize = indices.size() * sizeof(uint32_t);
 
@@ -1145,7 +1144,7 @@ void VulkanEngine::initDefaultData() {
 
     });
 
-    testMeshes = VkLoader::loadGltfMeshes(this, "../../Assets/basicmesh.glb").value();
+    testMeshes = VkLoader::loadGltfMeshes(this, "../../Assets/structure.glb").value();
 
 
     for (auto& m: testMeshes) {

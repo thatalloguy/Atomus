@@ -393,26 +393,28 @@ namespace VkLoader {
                 } },
                        node.transform);
 
-
-            for (int i = 0; i < gltf.nodes.size(); i++) {
-                fastgltf::Node& node = gltf.nodes[i];
-                std::shared_ptr<Node>& sceneNode = nodes[i];
-
-                for (auto& c : node.children) {
-                    sceneNode->childern.push_back(nodes[c]);
-                    nodes[c]->parent = sceneNode;
-                }
-            }
-
-            for (auto& node : nodes) {
-                if (node->parent.lock() == nullptr) {
-                    file.topNodes.push_back(node);
-                    node->refreshTransform(glm::mat4{1.f});
-                }
-            }
-
-            return scene;
         }
+
+        for (int i = 0; i < gltf.nodes.size(); i++) {
+            int p = gltf.nodes.size();
+
+            fastgltf::Node& node = gltf.nodes[i];
+            std::shared_ptr<Node>& sceneNode = nodes[i];
+
+            for (auto& c : node.children) {
+                sceneNode->childern.push_back(nodes[c]);
+                nodes[c]->parent = sceneNode;
+            }
+        }
+
+        for (auto& node : nodes) {
+            if (node->parent.lock() == nullptr) {
+                file.topNodes.push_back(node);
+                node->refreshTransform(glm::mat4{1.f});
+            }
+        }
+
+        return scene;
     }
 
     VkFilter extractFilter(fastgltf::Filter filter) {
