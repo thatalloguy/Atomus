@@ -117,4 +117,6 @@ namespace VkLoader {
     std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine *engine, std::string_view filePath);
     VkFilter extractFilter(fastgltf::Filter filter);
     VkSamplerMipmapMode extractMipmapMode(fastgltf::Filter filter);
+
+    std::optional<AllocatedImage> loadImage(VulkanEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image);
 }

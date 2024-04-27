@@ -446,6 +446,37 @@ namespace VkLoader {
                 return VK_SAMPLER_MIPMAP_MODE_LINEAR;
         }
     }
+
+    std::optional<AllocatedImage> loadImage(VulkanEngine *engine, fastgltf::Asset &asset, fastgltf::Image &image) {
+        AllocatedImage newImage {};
+
+        int width, height, nrChannels;
+
+        std::visit(
+                fastgltf::visitor {
+                    [](auto& arg) {},
+                    [&](fastgltf::sources::URI& filePath) {
+                      assert(filePath.fileByteOffset == 0);
+                      assert(filePath.uri.isLocalPath());
+
+                      const std::string path(filePath.uri.path().begin(), filePath.uri.path().end());
+
+                      unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+                      if (data) {
+                          VkExtent3D imageSize;
+                          imageSize.width  = width;
+                          imageSize.height = height;
+                          imageSize.depth  = 1;
+
+                          newImage = engine->createImage(data, imageSize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+
+                          stbi_image_free(data);
+                      }
+
+                    },
+                }
+        );
+    }
 }
 
 void LoadedGLTF::Draw(const glm::mat4 &topMatrix, DrawContext &ctx) {
