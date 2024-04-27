@@ -66,7 +66,7 @@ void VulkanEngine::Init() {
         initDefaultData();
 
 
-        std::string structurePath = {"..//..//Assets/structure.glb"};
+        std::string structurePath = {"..//..//Assets/structure_mat.glb"};
         auto structureFile = VkLoader::loadGltf(this, structurePath);
 
         assert(structureFile.has_value());
@@ -894,7 +894,7 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
     writer.writeBuffer(0, gpuSceneBufferData.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.updateSet(_device, globalDescriptor);
 
-    for (const RenderObject& draw : mainDrawContext.OpaqueSurfaces) {
+   /* for (const RenderObject& draw : mainDrawContext.OpaqueSurfaces) {
 
 
 
@@ -910,12 +910,33 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
         vkCmdPushConstants(cmd, draw.material->pipeline->layout ,VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(GPUDrawPushConstants), &pushConstants);
 
         vkCmdDrawIndexed(cmd,draw.indexCount,1, draw.firstIndex,0,0);
+    }*/
+
+   auto draw = [&](const RenderObject& draw) {
+       vkCmdBindPipeline(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline->pipeline);
+       vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,draw.material->pipeline->layout, 0,1, &globalDescriptor,0,nullptr );
+       vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,draw.material->pipeline->layout, 1,1, &draw.material->materialSet,0,nullptr );
+
+       vkCmdBindIndexBuffer(cmd, draw.indexBuffer,0,VK_INDEX_TYPE_UINT32);
+
+       GPUDrawPushConstants pushConstants{};
+       pushConstants.vertexBuffer = draw.vertexBufferAddress;
+       pushConstants.worldMatrix = draw.transform;
+       vkCmdPushConstants(cmd, draw.material->pipeline->layout ,VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(GPUDrawPushConstants), &pushConstants);
+
+       vkCmdDrawIndexed(cmd,draw.indexCount,1, draw.firstIndex,0,0);
+   };
+
+    for (auto& r : mainDrawContext.OpaqueSurfaces) {
+        draw(r);
     }
 
-
-
+    for (auto& r : mainDrawContext.TransparentSurfaces) {
+        draw(r);
+    }
 
     vkCmdEndRendering(cmd);
+
 }
 
 AllocatedBuffer VulkanEngine::createBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
@@ -1144,7 +1165,7 @@ void VulkanEngine::initDefaultData() {
 
     });
 
-    testMeshes = VkLoader::loadGltfMeshes(this, "../../Assets/structure.glb").value();
+    /*testMeshes = VkLoader::loadGltfMeshes(this, "../../Assets/structure.glb").value();
 
 
     for (auto& m: testMeshes) {
@@ -1159,7 +1180,7 @@ void VulkanEngine::initDefaultData() {
         }
 
         loadedNodes[m->name] = std::move(newNode);
-    }
+    }*/
 
     _mainDeletionQueue.pushFunction([&](){
         for (auto& mesh : testMeshes) {
@@ -1278,6 +1299,7 @@ void VulkanEngine::updateScene() {
     mainCamera.update();
 
     mainDrawContext.OpaqueSurfaces.clear();
+    mainDrawContext.TransparentSurfaces.clear();
 
 
     sceneData.view = glm::inverse(glm::translate(glm::mat4{1.f}, mainCamera.position) * mainCamera.getRotationMatrix());
