@@ -51,7 +51,7 @@ struct ComputeEffect {
 
 struct GLTFMetallic_roughness {
     MaterialPipeline opaquePipeline;
-    MaterialPipeline transparentPipline;
+    MaterialPipeline transparentPipeline;
 
     VkDescriptorSetLayout materialLayout;
 

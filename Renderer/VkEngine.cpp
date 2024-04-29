@@ -1060,7 +1060,7 @@ void VulkanEngine::initMeshPipeline() {
     //filled triangles
     pipelineBuilder.setPolygonMode(VK_POLYGON_MODE_FILL);
     //no backface culling
-    pipelineBuilder.setCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+    pipelineBuilder.setCullMode(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_CLOCKWISE);
     //no multisampling
     pipelineBuilder.setMultisamplingNone();
     //no blending
@@ -1334,57 +1334,68 @@ void GLTFMetallic_roughness::buildPipelines(VulkanEngine *engine) {
         spdlog::error("Error when building the [mesh] [vertex] shader");
     }
 
+
     VkPushConstantRange matrixRange{};
     matrixRange.offset = 0;
     matrixRange.size = sizeof(GPUDrawPushConstants);
     matrixRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     DescriptorLayoutBuilder layoutBuilder;
-    layoutBuilder.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    layoutBuilder.addBinding(0,VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     layoutBuilder.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     layoutBuilder.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
     materialLayout = layoutBuilder.build(engine->_device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
-    VkDescriptorSetLayout layouts[] = {
-            engine->_gpuSceneDataDescriptorLayout,
-            materialLayout
-    };
+    VkDescriptorSetLayout layouts[] = { engine->_gpuSceneDataDescriptorLayout,
+                                        materialLayout };
 
-    VkPipelineLayoutCreateInfo meshLayoutInfo = VkInit::pipelineLayoutCreateInfo();
-    meshLayoutInfo.setLayoutCount = 2;
-    meshLayoutInfo.pSetLayouts = layouts;
-    meshLayoutInfo.pPushConstantRanges = &matrixRange;
-    meshLayoutInfo.pushConstantRangeCount = 1;
+    VkPipelineLayoutCreateInfo mesh_layout_info = VkInit::pipelineLayoutCreateInfo();
+    mesh_layout_info.setLayoutCount = 2;
+    mesh_layout_info.pSetLayouts = layouts;
+    mesh_layout_info.pPushConstantRanges = &matrixRange;
+    mesh_layout_info.pushConstantRangeCount = 1;
 
     VkPipelineLayout newLayout;
-    VK_CHECK(vkCreatePipelineLayout(engine->_device, &meshLayoutInfo, nullptr, &newLayout));
+    VK_CHECK(vkCreatePipelineLayout(engine->_device, &mesh_layout_info, nullptr, &newLayout));
 
     opaquePipeline.layout = newLayout;
-    transparentPipline.layout = newLayout;
+    transparentPipeline.layout = newLayout;
 
-
+    // build the stage-create-info for both vertex and fragment stages. This lets
+    // the pipeline know the shader modules per stage
     PipelineBuilder pipelineBuilder;
+
     pipelineBuilder.setShaders(meshVertexShader, meshFragShader);
+
     pipelineBuilder.setInputToplogy(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+
     pipelineBuilder.setPolygonMode(VK_POLYGON_MODE_FILL);
+
     pipelineBuilder.setCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+
     pipelineBuilder.setMultisamplingNone();
+
     pipelineBuilder.disableBlending();
+
     pipelineBuilder.enableDepthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
     //render format
-    pipelineBuilder._pipelineLayout = newLayout;
+    pipelineBuilder.setColorAttachmentFormat(engine->_drawImage.imageFormat);
     pipelineBuilder.setDepthFormat(engine->_depthImage.imageFormat);
-    //build the pipeline
+
+    // use the triangle layout we created
+    pipelineBuilder._pipelineLayout = newLayout;
+
+    // finally build the pipeline
     opaquePipeline.pipeline = pipelineBuilder.buildPipeline(engine->_device);
 
-    //create the transparent variant
+    // create the transparent variant
     pipelineBuilder.enableBlendingAdditive();
 
     pipelineBuilder.enableDepthtest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-    transparentPipline.pipeline = pipelineBuilder.buildPipeline(engine->_device);
+    transparentPipeline.pipeline = pipelineBuilder.buildPipeline(engine->_device);
 
     vkDestroyShaderModule(engine->_device, meshFragShader, nullptr);
     vkDestroyShaderModule(engine->_device, meshVertexShader, nullptr);
@@ -1401,7 +1412,7 @@ MaterialInstance GLTFMetallic_roughness::writeMaterial(VkDevice device, Material
     MaterialInstance matData;
     matData.passType = pass;
     if (pass == MaterialPass::Transparent) {
-        matData.pipeline = &transparentPipline;
+        matData.pipeline = &transparentPipeline;
     } else {
         matData.pipeline = &opaquePipeline;
     }
@@ -1421,11 +1432,11 @@ MaterialInstance GLTFMetallic_roughness::writeMaterial(VkDevice device, Material
 
 void GLTFMetallic_roughness::destroy(VkDevice device, MaterialPass pass) {
     vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
-    vkDestroyPipeline(device, transparentPipline.pipeline, nullptr);
+    vkDestroyPipeline(device, transparentPipeline.pipeline, nullptr);
     vkDestroyPipeline(device, opaquePipeline.pipeline, nullptr);
 
     if (pass == MaterialPass::Transparent) {
-        vkDestroyPipelineLayout(device, transparentPipline.layout, nullptr);
+        vkDestroyPipelineLayout(device, transparentPipeline.layout, nullptr);
     } else {
         vkDestroyPipelineLayout(device, opaquePipeline.layout, nullptr);
     }

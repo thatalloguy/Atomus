@@ -67,16 +67,15 @@ void PipelineBuilder::clear() {
 
 VkPipeline PipelineBuilder::buildPipeline(VkDevice device) {
 
-    // Make viewport state from our viewport
     VkPipelineViewportStateCreateInfo viewportState = {};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportState.pNext = nullptr;
 
     viewportState.viewportCount = 1;
-    viewportState.scissorCount = 1;
+    viewportState.scissorCount =1;
 
-    //setup dummy color blending (not using transparent objects yet anyways).
-    // Blending is just no blend.
+    // setup dummy color blending. We arent using transparent objects yet
+    // the blending is just "no blend", but we do write to the color attachment
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlending.pNext = nullptr;
@@ -86,42 +85,39 @@ VkPipeline PipelineBuilder::buildPipeline(VkDevice device) {
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &_colorBlendAttachment;
 
-    //Clear vertexInputStateCreatinfo, we dont need it.
-    VkPipelineVertexInputStateCreateInfo _vertexInputInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
 
-    // build the actual pipeline
+    //completely clear VertexInputStateCreateInfo, as we have no need for it
+    VkPipelineVertexInputStateCreateInfo _vertexInputInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 
-    VkGraphicsPipelineCreateInfo pipelineInfo = { .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
-
+    VkGraphicsPipelineCreateInfo pipelineInfo = {.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+    //connect the renderInfo to the pNext extension mechanism
     pipelineInfo.pNext = &_renderInfo;
 
-    pipelineInfo.stageCount             = (uint32_t)_shaderStages.size();
-    pipelineInfo.pStages                = _shaderStages.data();
-    pipelineInfo.pVertexInputState      = &_vertexInputInfo;
-    pipelineInfo.pInputAssemblyState    = &_inputAssembly;
-    pipelineInfo.pViewportState         = &viewportState;
-    pipelineInfo.pRasterizationState    =  &_rasterizer;
-    pipelineInfo.pMultisampleState      = &_multisampling;
-    pipelineInfo.pColorBlendState       = &colorBlending;
-    pipelineInfo.pDepthStencilState     = &_depthStencil;
-    pipelineInfo.layout                 = _pipelineLayout;
-
-
+    pipelineInfo.stageCount = (uint32_t)_shaderStages.size();
+    pipelineInfo.pStages = _shaderStages.data();
+    pipelineInfo.pVertexInputState = &_vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &_inputAssembly;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &_rasterizer;
+    pipelineInfo.pMultisampleState = &_multisampling;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDepthStencilState = &_depthStencil;
+    pipelineInfo.layout = _pipelineLayout;
 
     VkDynamicState state[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
-    VkPipelineDynamicStateCreateInfo dynamicInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
+    VkPipelineDynamicStateCreateInfo dynamicInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
     dynamicInfo.pDynamicStates = &state[0];
     dynamicInfo.dynamicStateCount = 2;
 
     pipelineInfo.pDynamicState = &dynamicInfo;
-
-
-    //creating the graphics pipeline is error prone.
+    // better than the common VK_CHECK case
     VkPipeline newPipeline;
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &newPipeline) != VK_SUCCESS) {
-        spdlog::error("Failed to create pipeline :(");
-        return VK_NULL_HANDLE;
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
+                                  nullptr, &newPipeline)
+        != VK_SUCCESS) {
+       spdlog::error("failed to create pipeline");
+        return VK_NULL_HANDLE; // failed to create graphics pipeline
     } else {
         return newPipeline;
     }
