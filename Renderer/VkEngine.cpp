@@ -25,7 +25,7 @@ VulkanEngine& VulkanEngine::Get() { return *loadedEngine; };
 
 
 
-void VulkanEngine::Init() {
+void VulkanEngine::Init(GLFWwindow* renderWindow) {
 
 
     assert(loadedEngine == nullptr);
@@ -34,15 +34,15 @@ void VulkanEngine::Init() {
     if (!glfwInit()) {
         spdlog::error("Couldn't initialize GLFW\n");
     } else {
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        _window = glfwCreateWindow(800, 600, "Atomus 0.0.1", nullptr, nullptr);
+
+        _window = renderWindow;//glfwCreateWindow(800, 600, "Atomus 0.0.1", nullptr, nullptr);
 
         if (!_window) {
-            spdlog::error("Couldn't create GLFW window\n");
+            spdlog::error("Couldn't recognize the GLFW window\n");
             glfwTerminate();
         } else {
-            spdlog::info("Created Window Successfully!");
+            spdlog::info("recognized the Window Successfully!");
         }
 
         // Initialize vulkan
@@ -66,12 +66,12 @@ void VulkanEngine::Init() {
         initDefaultData();
 
 
-        std::string structurePath = {"..//..//Assets/structure_mat.glb"};
+        /*std::string structurePath = {"..//..//Assets/structure_mat.glb"};
         auto structureFile = VkLoader::loadGltf(this, structurePath);
 
         assert(structureFile.has_value());
 
-        loadedScenes["structure"] = *structureFile;
+        loadedScenes["structure"] = *structureFile;*/
 
         _isInitialized = true;
 
@@ -149,6 +149,10 @@ void VulkanEngine::CleanUp()
         spdlog::info("Destroying current loaded engine");
         vkDeviceWaitIdle(_device);
 
+
+        for (auto obj : loadedScenes) {
+            obj.second->clearAll();
+        }
         loadedScenes.clear();
 
         for (int i=0; i < FRAME_OVERLAP; i++) {
@@ -185,7 +189,8 @@ void VulkanEngine::CleanUp()
 
 void VulkanEngine::Draw()
 {
-    updateScene();
+    /// The user must now update the scene manually so that they can call the draw function for their own objects.
+    ///updateScene();
 
     //wait until the gpu has finished rendering the last frame. Timeout of 1 second
     VK_CHECK(vkWaitForFences(_device, 1, &getCurrentFrame()._renderFence, true, 1000000000));
@@ -285,10 +290,8 @@ void VulkanEngine::Draw()
 void VulkanEngine::Run()
 {
 
-    spdlog::info("Calling main loop");
-        // Handle events on queue
-        while (!glfwWindowShouldClose(_window)) {
-            glfwPollEvents();
+            // Handle events on queue
+
 
 
             auto start = std::chrono::system_clock::now();
@@ -304,7 +307,7 @@ void VulkanEngine::Run()
             if (_stopRendering) {
                 // throttle the speed to avoid the endless spinning
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                continue;
+                return;
             }
 
             if (resizeRequested) {
@@ -373,7 +376,7 @@ void VulkanEngine::Run()
 
             auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
             stats.frameTime = elapsed.count() / 1000.f;
-        }
+
 }
 
 
@@ -1378,8 +1381,7 @@ void VulkanEngine::updateScene() {
     sceneData.sunlightColor = glm::vec4(1.f);
     sceneData.sunLightDirection = glm::vec4(0,1,0.5,1.f);
 
-    //loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);
-    loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
+    ///loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
 
     auto end = std::chrono::system_clock::now();
 

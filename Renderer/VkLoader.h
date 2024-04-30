@@ -102,12 +102,11 @@ struct LoadedGLTF : public IRenderable {
 
     VulkanEngine* creator;
 
-    ~LoadedGLTF() { clearAll(); };
+    //// Do this manual instead :)
+    ///~LoadedGLTF() { clearAll(); };
 
     virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx);
 
-private:
-    //TODO do this
     void clearAll();
 };
 

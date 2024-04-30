@@ -4,9 +4,33 @@
 int main() {
     VulkanEngine engine;
 
-    engine.Init();
 
-    engine.Run();
+    ///VulkanEngine doenst handle this anymore.
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    auto window =  glfwCreateWindow(800, 600, "Atomus 0.0.1", nullptr, nullptr);
+
+    engine.Init(window);
+
+    //load test model
+    std::string structurePath = {"..//..//Assets/structure_mat.glb"};
+    auto structureFile = VkLoader::loadGltf(&engine, structurePath);
+
+    assert(structureFile.has_value());
+
+    engine.loadedScenes["structure"] = *structureFile;
+
+
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+
+        engine.updateScene();
+
+        engine.loadedScenes["structure"]->Draw(glm::mat4{1.f}, engine.mainDrawContext);
+
+        engine.Run();
+    }
+
 
     engine.CleanUp();
 

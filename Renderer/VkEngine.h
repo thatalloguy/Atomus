@@ -210,7 +210,7 @@ class VulkanEngine {
         // Life-time functions
         static VulkanEngine& Get();
 
-        void Init();
+        void Init(GLFWwindow* renderWindow);
         void CleanUp();
         void Draw();
         void Run();
@@ -230,6 +230,9 @@ class VulkanEngine {
         AllocatedImage _whiteImage;
 
         std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
+
+
+        void updateScene();
 private:
         void initVulkan();
         void initSwapchain();
@@ -262,7 +265,6 @@ private:
         void initTrianglePipeline();
         void drawGeometry(VkCommandBuffer cmd);
 
-        void updateScene();
 
         std::vector<std::shared_ptr<MeshAsset>> testMeshes;
 
