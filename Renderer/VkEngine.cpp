@@ -36,7 +36,7 @@ void VulkanEngine::Init() {
     } else {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        _window = glfwCreateWindow(800, 600, "Vulkan Engine :)", nullptr, nullptr);
+        _window = glfwCreateWindow(800, 600, "Atomus 0.0.1", nullptr, nullptr);
 
         if (!_window) {
             spdlog::error("Couldn't create GLFW window\n");
@@ -187,13 +187,11 @@ void VulkanEngine::Draw()
 {
     updateScene();
 
-//> frame_clear
     //wait until the gpu has finished rendering the last frame. Timeout of 1 second
     VK_CHECK(vkWaitForFences(_device, 1, &getCurrentFrame()._renderFence, true, 1000000000));
 
     getCurrentFrame()._deletionQueue.flush();
     getCurrentFrame()._frameDescriptors.clearPools(_device);
-//< frame_clear
 
     //request image from the swapchain
     uint32_t swapchainImageIndex;
@@ -204,8 +202,8 @@ void VulkanEngine::Draw()
         return;
     }
 
-    _drawExtent.height = (float) std::min(_swapchainExtent.height, _drawImage.imageExtent.height) * renderScale;
-    _drawExtent.width = (float) std::min(_swapchainExtent.width, _drawImage.imageExtent.width) * renderScale;
+    _drawExtent.height =  std::min(_swapchainExtent.height, _drawImage.imageExtent.height) * renderScale;
+    _drawExtent.width =  std::min(_swapchainExtent.width, _drawImage.imageExtent.width) * renderScale;
 
     VK_CHECK(vkResetFences(_device, 1, &getCurrentFrame()._renderFence));
 
@@ -945,8 +943,8 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
                 VkViewport viewport = {};
                 viewport.x = 0;
                 viewport.y = 0;
-                viewport.width = (float)_windowExtent.width;
-                viewport.height = (float)_windowExtent.height;
+                viewport.width = (float)_drawImage.imageExtent.width;
+                viewport.height = (float)_drawImage.imageExtent.height;
                 viewport.minDepth = 0.f;
                 viewport.maxDepth = 1.f;
 
@@ -955,8 +953,8 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
                 VkRect2D scissor = {};
                 scissor.offset.x = 0;
                 scissor.offset.y = 0;
-                scissor.extent.width = _windowExtent.width;
-                scissor.extent.height = _windowExtent.height;
+                scissor.extent.width = _drawImage.imageExtent.width;
+                scissor.extent.height = _drawImage.imageExtent.height;
 
                 vkCmdSetScissor(cmd, 0, 1, &scissor);
             }
@@ -1369,7 +1367,7 @@ void VulkanEngine::updateScene() {
 
 
     sceneData.view = glm::inverse(glm::translate(glm::mat4{1.f}, mainCamera.position) * mainCamera.getRotationMatrix());
-    sceneData.proj = glm::perspective(glm::radians(mainCamera.fov),(float) (_swapchainExtent.width / _swapchainExtent.height), mainCamera.near, mainCamera.far);
+    sceneData.proj = glm::perspective(glm::radians(mainCamera.fov),(float) (_drawExtent.width / _drawExtent.height), mainCamera.near, mainCamera.far);
 
 
     sceneData.proj[1][1] *= -1;
