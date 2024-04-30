@@ -872,6 +872,25 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
     auto start = std::chrono::system_clock::now();
 
+
+    std::vector<uint32_t> opaque_draws;
+
+    opaque_draws.reserve(mainDrawContext.OpaqueSurfaces.size());
+
+    for (uint32_t i = 0; i < mainDrawContext.OpaqueSurfaces.size(); i++) {
+        opaque_draws.push_back(i);
+    }
+
+    std::sort(opaque_draws.begin(), opaque_draws.end(), [&](const auto& iA, const auto& iB) {
+       const RenderObject& A = mainDrawContext.OpaqueSurfaces[iA];
+       const RenderObject& B = mainDrawContext.OpaqueSurfaces[iB];
+       if (A.material == B.material) {
+           return A.indexBuffer < B.indexBuffer;
+       } else {
+           return A.material < B.material;
+       }
+    });
+
     //begin a render pass  connected to our draw image
     VkRenderingAttachmentInfo colorAttachment = VkInit::attachmentInfo(_drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
     VkRenderingAttachmentInfo depthAttachment = VkInit::depthAttachmentInfo(_depthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
@@ -976,9 +995,8 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
         stats.drawCallCount++;
         stats.triangleCount += draw.indexCount / 3;
     };*/
-    for (auto& r : mainDrawContext.OpaqueSurfaces) {
-        draw(r);
-
+    for (auto& r : opaque_draws) {
+        draw(mainDrawContext.OpaqueSurfaces[r]);
     }
 
     for (auto& r : mainDrawContext.TransparentSurfaces) {
