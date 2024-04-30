@@ -292,6 +292,9 @@ void VulkanEngine::Run()
         while (!glfwWindowShouldClose(_window)) {
             glfwPollEvents();
 
+
+            auto start = std::chrono::system_clock::now();
+
             if (glfwGetWindowAttrib(_window, GLFW_ICONIFIED)) {
                 _stopRendering = true;
             }
@@ -318,7 +321,7 @@ void VulkanEngine::Run()
             ImGui::NewFrame();
 
 
-            if (ImGui::Begin("Background")) {
+            if (ImGui::Begin("Debug")) {
                 ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
 
 
@@ -335,15 +338,30 @@ void VulkanEngine::Run()
 
 
                 ImGui::Spacing();
-                ImGui::SeparatorText("Camera Info");
+                if (ImGui::TreeNode("Camera Info")) {
+                    ImGui::DragFloat3("Pos", (float*)& mainCamera.position);
+                    ImGui::DragFloat3("Vel", (float*)& mainCamera.velocity);
+                    ImGui::DragFloat("Pitch", &mainCamera.pitch, 0.01f);
+                    ImGui::DragFloat("Yaw", &mainCamera.yaw, 0.01f);
+                    ImGui::DragFloat("FOV", &mainCamera.fov);
+                    ImGui::DragFloat("near", &mainCamera.near);
+                    ImGui::DragFloat("far", &mainCamera.far);
 
-                ImGui::DragFloat3("Pos", (float*)& mainCamera.position);
-                ImGui::DragFloat3("Vel", (float*)& mainCamera.velocity);
-                ImGui::DragFloat("Pitch", &mainCamera.pitch, 0.01f);
-                ImGui::DragFloat("Yaw", &mainCamera.yaw, 0.01f);
-                ImGui::DragFloat("FOV", &mainCamera.fov);
-                ImGui::DragFloat("near", &mainCamera.near);
-                ImGui::DragFloat("far", &mainCamera.far);
+                    ImGui::TreePop();
+                }
+
+                if (ImGui::TreeNode("Engine Stats")) {
+                    ImGui::Text("FrameTime  (ms): %f", stats.frameTime);
+                    ImGui::Text("DrawTime   (ms): %f", stats.meshDrawTime);
+                    ImGui::Text("UpdateTime (ms): %f", stats.sceneUpdateTime);
+
+                    ImGui::Text("DrawCount      : %i", stats.drawCallCount);
+                    ImGui::Text("TriangleCount  : %i", stats.triangleCount);
+
+
+                    ImGui::TreePop();
+                }
+
 
                 ImGui::End();
             }
@@ -351,6 +369,12 @@ void VulkanEngine::Run()
             ImGui::Render();
 
             Draw();
+
+            /// compare the new time vs the old
+            auto end = std::chrono::system_clock::now();
+
+            auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            stats.frameTime = elapsed.count() / 1000.f;
         }
 }
 
@@ -842,6 +866,11 @@ void VulkanEngine::initTrianglePipeline() {
 
 void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
 
+    //reset counters
+    stats.drawCallCount = 0;
+    stats.triangleCount = 0;
+
+    auto start = std::chrono::system_clock::now();
 
     //begin a render pass  connected to our draw image
     VkRenderingAttachmentInfo colorAttachment = VkInit::attachmentInfo(_drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
@@ -894,23 +923,6 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
     writer.writeBuffer(0, gpuSceneBufferData.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.updateSet(_device, globalDescriptor);
 
-   /* for (const RenderObject& draw : mainDrawContext.OpaqueSurfaces) {
-
-
-
-        vkCmdBindPipeline(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline->pipeline);
-        vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,draw.material->pipeline->layout, 0,1, &globalDescriptor,0,nullptr );
-        vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,draw.material->pipeline->layout, 1,1, &draw.material->materialSet,0,nullptr );
-
-        vkCmdBindIndexBuffer(cmd, draw.indexBuffer,0,VK_INDEX_TYPE_UINT32);
-
-        GPUDrawPushConstants pushConstants{};
-        pushConstants.vertexBuffer = draw.vertexBufferAddress;
-        pushConstants.worldMatrix = draw.transform;
-        vkCmdPushConstants(cmd, draw.material->pipeline->layout ,VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(GPUDrawPushConstants), &pushConstants);
-
-        vkCmdDrawIndexed(cmd,draw.indexCount,1, draw.firstIndex,0,0);
-    }*/
 
    auto draw = [&](const RenderObject& draw) {
        vkCmdBindPipeline(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline->pipeline);
@@ -925,10 +937,14 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
        vkCmdPushConstants(cmd, draw.material->pipeline->layout ,VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(GPUDrawPushConstants), &pushConstants);
 
        vkCmdDrawIndexed(cmd,draw.indexCount,1, draw.firstIndex,0,0);
+
+       stats.drawCallCount++;
+       stats.triangleCount += draw.indexCount / 3;
    };
 
     for (auto& r : mainDrawContext.OpaqueSurfaces) {
         draw(r);
+
     }
 
     for (auto& r : mainDrawContext.TransparentSurfaces) {
@@ -936,6 +952,12 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
     }
 
     vkCmdEndRendering(cmd);
+
+    auto end = std::chrono::system_clock::now();
+
+    //convert to ms
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    stats.meshDrawTime = elapsed.count() / 1000.f;
 
 }
 
@@ -1296,6 +1318,9 @@ void VulkanEngine::destroyImage(const AllocatedImage &img) {
 }
 
 void VulkanEngine::updateScene() {
+
+    auto start = std::chrono::system_clock::now();
+
     mainCamera.update();
 
     mainDrawContext.OpaqueSurfaces.clear();
@@ -1303,7 +1328,7 @@ void VulkanEngine::updateScene() {
 
 
     sceneData.view = glm::inverse(glm::translate(glm::mat4{1.f}, mainCamera.position) * mainCamera.getRotationMatrix());
-    sceneData.proj = glm::perspective(glm::radians(mainCamera.fov),(float) (1280 / 720), mainCamera.near, mainCamera.far);
+    sceneData.proj = glm::perspective(glm::radians(mainCamera.fov),(float) (_swapchainExtent.width / _swapchainExtent.height), mainCamera.near, mainCamera.far);
 
 
     sceneData.proj[1][1] *= -1;
@@ -1316,6 +1341,11 @@ void VulkanEngine::updateScene() {
 
     //loadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, mainDrawContext);
     loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
+
+    auto end = std::chrono::system_clock::now();
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    stats.sceneUpdateTime = elapsed.count() / 1000.f;
 }
 
 

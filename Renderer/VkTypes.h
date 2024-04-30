@@ -42,6 +42,15 @@
 
 //TODO add documentation
 
+
+struct EngineStats {
+    float frameTime;
+    int triangleCount;
+    int drawCallCount;
+    float sceneUpdateTime;
+    float meshDrawTime;
+};
+
 struct AllocatedBuffer {
     VkBuffer buffer;
     VmaAllocation allocation;

@@ -179,6 +179,7 @@ class VulkanEngine {
         // misc
 
         int calledNum = 0;
+        EngineStats stats;
 
         //scene
 
