@@ -29,6 +29,8 @@ My personal vulkan renderer
 - [x] GLTF scene nodes.
 - [x] GLTF textures
 - [x] Faster draw
+-
+- [x] Refactor
 
 ### ScreenShot
 
@@ -40,17 +42,46 @@ My personal vulkan renderer
 ```c++
 ////TODO: better docs
 
+#pragma once
 #include "Renderer/VkEngine.h"
 
 int main() {
-    VulkanEngine engine;
+VulkanEngine engine;
 
-    engine.Init();
 
+///VulkanEngine doenst handle this anymore. you gotta do window creation with GLFW!
+glfwInit();
+glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+auto window =  glfwCreateWindow(800, 600, "Atomus 0.0.1", nullptr, nullptr);
+
+// pass in a pointer GLFWwindow object and enable or disable a imgui debug menu (false by default);
+engine.Init(window, true);
+
+//loading a model (Currently supports GLTF and GLB, via the fastgltf lib)
+std::string structurePath = {"..//..//Assets/structure_mat.glb"};
+auto structureFile = VkLoader::loadGltf(&engine, structurePath);
+// just a check, not necessary
+assert(structureFile.has_value());
+//Name can be anything.
+engine.loadedScenes["structure"] = *structureFile;
+
+
+while (!glfwWindowShouldClose(window)) {
+    glfwPollEvents();
+    
+    //First update the scene
+    engine.updateScene();
+    
+    //Draw any objects after that
+    engine.loadedScenes["structure"]->Draw(glm::mat4{1.f}, engine.mainDrawContext);
+    
+    //Then call the run function
     engine.Run();
+}
 
-    engine.CleanUp();
+/// Any objects in the loadedScenes structure gets handeld by the engine and doenst have to be manually to destroyed.
+engine.CleanUp();
 
-    return 0;
+return 0;
 }
 ```

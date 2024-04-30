@@ -181,6 +181,7 @@ class VulkanEngine {
         // misc
 
         int calledNum = 0;
+        bool displayDebugMenu = true;
         EngineStats stats;
 
         //scene
@@ -210,7 +211,7 @@ class VulkanEngine {
         // Life-time functions
         static VulkanEngine& Get();
 
-        void Init(GLFWwindow* renderWindow);
+        void Init(GLFWwindow* renderWindow, bool displayDebugMenu = false);
         void CleanUp();
         void Draw();
         void Run();

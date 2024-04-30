@@ -10,7 +10,7 @@ int main() {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     auto window =  glfwCreateWindow(800, 600, "Atomus 0.0.1", nullptr, nullptr);
 
-    engine.Init(window);
+    engine.Init(window, true);
 
     //load test model
     std::string structurePath = {"..//..//Assets/structure_mat.glb"};

@@ -25,7 +25,8 @@ VulkanEngine& VulkanEngine::Get() { return *loadedEngine; };
 
 
 
-void VulkanEngine::Init(GLFWwindow* renderWindow) {
+void VulkanEngine::Init(GLFWwindow* renderWindow, bool _displayDebugMenu) {
+
 
 
     assert(loadedEngine == nullptr);
@@ -72,7 +73,7 @@ void VulkanEngine::Init(GLFWwindow* renderWindow) {
         assert(structureFile.has_value());
 
         loadedScenes["structure"] = *structureFile;*/
-
+        displayDebugMenu = _displayDebugMenu;
         _isInitialized = true;
 
 
@@ -321,52 +322,52 @@ void VulkanEngine::Run()
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
+            if (displayDebugMenu) {
+                if (ImGui::Begin("Debug")) {
+                    ComputeEffect &selected = backgroundEffects[currentBackgroundEffect];
 
-            if (ImGui::Begin("Debug")) {
-                ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
+
+                    if (ImGui::TreeNode("Background")) {
+                        ImGui::Text("Selected Effect: %s", selected.name);
+                        ImGui::SliderInt("Effect Index", &currentBackgroundEffect, 0, backgroundEffects.size() - 1);
+                        ImGui::InputFloat4("data1", (float *) &selected.data.data1);
+                        ImGui::InputFloat4("data2", (float *) &selected.data.data2);
+                        ImGui::InputFloat4("data3", (float *) &selected.data.data3);
+                        ImGui::InputFloat4("data4", (float *) &selected.data.data4);
+
+                        ImGui::TreePop();
+                    }
 
 
-                if (ImGui::TreeNode("Background")) {
-                    ImGui::Text("Selected Effect: %s", selected.name);
-                    ImGui::SliderInt("Effect Index", &currentBackgroundEffect, 0, backgroundEffects.size() - 1);
-                    ImGui::InputFloat4("data1", (float*)& selected.data.data1);
-                    ImGui::InputFloat4("data2", (float*)& selected.data.data2);
-                    ImGui::InputFloat4("data3", (float*)& selected.data.data3);
-                    ImGui::InputFloat4("data4", (float*)& selected.data.data4);
+                    ImGui::Spacing();
+                    if (ImGui::TreeNode("Camera Info")) {
+                        ImGui::DragFloat3("Pos", (float *) &mainCamera.position);
+                        ImGui::DragFloat3("Vel", (float *) &mainCamera.velocity);
+                        ImGui::DragFloat("Pitch", &mainCamera.pitch, 0.01f);
+                        ImGui::DragFloat("Yaw", &mainCamera.yaw, 0.01f);
+                        ImGui::DragFloat("FOV", &mainCamera.fov);
+                        ImGui::DragFloat("near", &mainCamera.near);
+                        ImGui::DragFloat("far", &mainCamera.far);
 
-                    ImGui::TreePop();
+                        ImGui::TreePop();
+                    }
+
+                    if (ImGui::TreeNode("Engine Stats")) {
+                        ImGui::Text("FrameTime  (ms): %f", stats.frameTime);
+                        ImGui::Text("DrawTime   (ms): %f", stats.meshDrawTime);
+                        ImGui::Text("UpdateTime (ms): %f", stats.sceneUpdateTime);
+
+                        ImGui::Text("DrawCount      : %i", stats.drawCallCount);
+                        ImGui::Text("TriangleCount  : %i", stats.triangleCount);
+
+
+                        ImGui::TreePop();
+                    }
+
+
+                    ImGui::End();
                 }
-
-
-                ImGui::Spacing();
-                if (ImGui::TreeNode("Camera Info")) {
-                    ImGui::DragFloat3("Pos", (float*)& mainCamera.position);
-                    ImGui::DragFloat3("Vel", (float*)& mainCamera.velocity);
-                    ImGui::DragFloat("Pitch", &mainCamera.pitch, 0.01f);
-                    ImGui::DragFloat("Yaw", &mainCamera.yaw, 0.01f);
-                    ImGui::DragFloat("FOV", &mainCamera.fov);
-                    ImGui::DragFloat("near", &mainCamera.near);
-                    ImGui::DragFloat("far", &mainCamera.far);
-
-                    ImGui::TreePop();
-                }
-
-                if (ImGui::TreeNode("Engine Stats")) {
-                    ImGui::Text("FrameTime  (ms): %f", stats.frameTime);
-                    ImGui::Text("DrawTime   (ms): %f", stats.meshDrawTime);
-                    ImGui::Text("UpdateTime (ms): %f", stats.sceneUpdateTime);
-
-                    ImGui::Text("DrawCount      : %i", stats.drawCallCount);
-                    ImGui::Text("TriangleCount  : %i", stats.triangleCount);
-
-
-                    ImGui::TreePop();
-                }
-
-
-                ImGui::End();
             }
-
             ImGui::Render();
 
             Draw();
