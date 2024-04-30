@@ -205,6 +205,8 @@ class VulkanEngine {
 
         void destroyImage(const AllocatedImage& img);
 
+        bool isVisible(const RenderObject& obj, const Camera& camera);
+
         // Life-time functions
         static VulkanEngine& Get();
 

@@ -878,7 +878,9 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
     opaque_draws.reserve(mainDrawContext.OpaqueSurfaces.size());
 
     for (uint32_t i = 0; i < mainDrawContext.OpaqueSurfaces.size(); i++) {
-        opaque_draws.push_back(i);
+        if (isVisible(mainDrawContext.OpaqueSurfaces[i], mainCamera)) {
+            opaque_draws.push_back(i);
+        }
     }
 
     std::sort(opaque_draws.begin(), opaque_draws.end(), [&](const auto& iA, const auto& iB) {
@@ -978,23 +980,7 @@ void VulkanEngine::drawGeometry(VkCommandBuffer cmd) {
         vkCmdDrawIndexed(cmd, r.indexCount, 1, r.firstIndex, 0, 0);
     };
 
-/*    auto draw = [&](const RenderObject& draw) {
-        vkCmdBindPipeline(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline->pipeline);
-        vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,draw.material->pipeline->layout, 0,1, &globalDescriptor,0,nullptr );
-        vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,draw.material->pipeline->layout, 1,1, &draw.material->materialSet,0,nullptr );
 
-        vkCmdBindIndexBuffer(cmd, draw.indexBuffer,0,VK_INDEX_TYPE_UINT32);
-
-        GPUDrawPushConstants pushConstants{};
-        pushConstants.vertexBuffer = draw.vertexBufferAddress;
-        pushConstants.worldMatrix = draw.transform;
-        vkCmdPushConstants(cmd, draw.material->pipeline->layout ,VK_SHADER_STAGE_VERTEX_BIT,0, sizeof(GPUDrawPushConstants), &pushConstants);
-
-        vkCmdDrawIndexed(cmd,draw.indexCount,1, draw.firstIndex,0,0);
-
-        stats.drawCallCount++;
-        stats.triangleCount += draw.indexCount / 3;
-    };*/
     for (auto& r : opaque_draws) {
         draw(mainDrawContext.OpaqueSurfaces[r]);
     }
@@ -1400,6 +1386,55 @@ void VulkanEngine::updateScene() {
     stats.sceneUpdateTime = elapsed.count() / 1000.f;
 }
 
+bool VulkanEngine::isVisible(const RenderObject &obj, const Camera& camera) {
+    std::array<glm::vec3, 8> corners {
+            glm::vec3 { 1, 1, 1 },
+            glm::vec3 { 1, 1, -1 },
+            glm::vec3 { 1, -1, 1 },
+            glm::vec3 { 1, -1, -1 },
+            glm::vec3 { -1, 1, 1 },
+            glm::vec3 { -1, 1, -1 },
+            glm::vec3 { -1, -1, 1 },
+            glm::vec3 { -1, -1, -1 },
+    };
+
+    //glm::mat4 view = glm::inverse(glm::translate(glm::mat4{1.f}, mainCamera.position) * mainCamera.getRotationMatrix());
+    //glm::mat4 proj = glm::perspective(glm::radians(mainCamera.fov),(float) (_swapchainExtent.width / _swapchainExtent.height), 0.1f, 100000000.f);
+
+
+    //proj[1][1] *= -1;
+
+
+    glm::mat4 matrix = sceneData.viewproj * obj.transform;
+
+    glm::vec3 min = {1.5, 1.5, 1.5};
+    glm::vec3 max = {-1.5, -1.5, -1.5};
+
+    for (int c = 0; c < 8; c++) {
+
+        //project each corner into clip space
+        glm::vec4 v = matrix * glm::vec4(obj.bounds.origin + (corners[c] * obj.bounds.extents), 1.f);
+
+
+        //perspective correction ?
+        v.x = v.x / v.w;
+        v.y = v.y / v.w;
+        v.z = v.z / v.w;
+
+        min = glm::min(glm::vec3{ v.x, v.y, v.z}, min);
+        max = glm::max(glm::vec3{ v.x, v.y, v.z}, max);
+
+    }
+
+    // check the clip space box is within the view
+    if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f) {
+        return false;
+    } else {
+        return true;
+    }
+
+}
+
 
 
 //// GLTFMetallic
@@ -1526,9 +1561,8 @@ void GLTFMetallic_roughness::destroy(VkDevice device, MaterialPass pass) {
 
 void MeshNode::Draw(const glm::mat4 &topMatrix, DrawContext &ctx) {
 
-    glm::mat4 trans = glm::scale(topMatrix, glm::vec3(1, 1, 1));
 
-    glm::mat4 nodeMatrix = trans * worldTransform;
+    glm::mat4 nodeMatrix = topMatrix * worldTransform;
 
 
     for (auto& s: mesh->surfaces) {
@@ -1537,11 +1571,16 @@ void MeshNode::Draw(const glm::mat4 &topMatrix, DrawContext &ctx) {
         def.firstIndex = s.startIndex;
         def.indexBuffer = mesh->meshBuffers.indexBuffer.buffer;
         def.material = &s.material->data;
+        def.bounds = s.bounds;
 
         def.transform = nodeMatrix;
         def.vertexBufferAddress = mesh->meshBuffers.vertexBufferAddress;
 
-        ctx.OpaqueSurfaces.push_back(def);
+        if (s.material->data.passType == MaterialPass::Transparent) {
+            ctx.TransparentSurfaces.push_back(def);
+        } else {
+            ctx.OpaqueSurfaces.push_back(def);
+        }
 
     }
 

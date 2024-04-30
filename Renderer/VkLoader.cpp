@@ -359,10 +359,10 @@ namespace VkLoader {
                     minpos = glm::min(minpos, vertices[i].position);
                     maxpos = glm::max(maxpos, vertices[i].position);
                 }
-/* LATER
+
                 newSurface.bounds.origin = (maxpos + minpos) / 2.f;
                 newSurface.bounds.extents = (maxpos - minpos) / 2.f;
-                newSurface.bounds.sphereRadius = glm::length(newSurface.bounds.extents);*/
+                newSurface.bounds.sphereRadius = glm::length(newSurface.bounds.extents);
                 newmesh->surfaces.push_back(newSurface);
             }
 
@@ -401,8 +401,6 @@ namespace VkLoader {
                                            } },
                        node.transform);
         }
-//< load_nodes
-//> load_graph
         // run loop again to setup transform hierarchy
         for (int i = 0; i < gltf.nodes.size(); i++) {
             fastgltf::Node& node = gltf.nodes[i];
