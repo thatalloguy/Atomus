@@ -40,7 +40,6 @@ My personal vulkan renderer
 ### How to use
 
 ```c++
-////TODO: better docs
 
 #pragma once
 #include "Renderer/VkEngine.h"
