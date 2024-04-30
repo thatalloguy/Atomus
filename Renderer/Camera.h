@@ -18,8 +18,8 @@ public:
     float roll{0.f};
 
     float fov{ 90.f};
-    float near{0.1f};
-    float far{10000.f};
+    float near{-0.9f};
+    float far{4.f};
 
     glm::mat4 getViewMatrix();
     glm::mat4 getRotationMatrix();

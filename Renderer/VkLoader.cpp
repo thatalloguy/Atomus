@@ -505,9 +505,9 @@ namespace VkLoader {
                             std::visit(fastgltf::visitor { // We only care about VectorWithMime here, because we
                                                // specify LoadExternalBuffers, meaning all buffers
                                                // are already loaded into a vector.
-                                               [](auto& arg) {},
-                                               [&](fastgltf::sources::Vector& vector) {
-                                                   spdlog::info("loading from memory (from buffer)");
+                                               [](auto& arg) {
+                                               },
+                                               [&](fastgltf::sources::Array& vector) {
                                                    unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
                                                                                                static_cast<int>(bufferView.byteLength),
                                                                                                &width, &height, &nrChannels, 4);
