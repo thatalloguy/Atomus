@@ -589,7 +589,7 @@ void VulkanEngine::destroySwapchain() {
 void VulkanEngine::initPipelines() {
     initBackgroundPipelines();
     //initTrianglePipeline();
-    initMeshPipeline();
+    ///initMeshPipeline();
 
     metalRoughMaterial.buildPipelines(this);
 }
@@ -1303,7 +1303,7 @@ void VulkanEngine::updateScene() {
 
 
     sceneData.view = glm::inverse(glm::translate(glm::mat4{1.f}, mainCamera.position) * mainCamera.getRotationMatrix());
-    sceneData.proj = glm::perspective(glm::radians(mainCamera.fov),(float) (1280 / 720), 0.1f, 10000000.0f );
+    sceneData.proj = glm::perspective(glm::radians(mainCamera.fov),(float) (1280 / 720), mainCamera.near, mainCamera.far);
 
 
     sceneData.proj[1][1] *= -1;

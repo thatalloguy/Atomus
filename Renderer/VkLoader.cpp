@@ -461,7 +461,8 @@ namespace VkLoader {
 
         std::visit(
                 fastgltf::visitor {
-                        [](auto& arg) {},
+                        [](auto& arg) {
+                            },
                         [&](fastgltf::sources::URI& filePath) {
                             spdlog::info("loading from path");
                             assert(filePath.fileByteOffset == 0); // We don't support offsets with stbi.
