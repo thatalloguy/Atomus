@@ -51,6 +51,13 @@ struct EngineStats {
     float meshDrawTime;
 };
 
+struct Bounds {
+    glm::vec3 origin;
+    float sphereRadius;
+    glm::vec3 extents;
+};
+
+
 struct AllocatedBuffer {
     VkBuffer buffer;
     VmaAllocation allocation;
