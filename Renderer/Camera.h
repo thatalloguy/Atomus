@@ -19,7 +19,7 @@ public:
 
     float fov{ 90.f};
     float near{-0.9f};
-    float far{4.f};
+    float far{0.9f};
 
     glm::mat4 getViewMatrix();
     glm::mat4 getRotationMatrix();
