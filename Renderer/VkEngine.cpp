@@ -84,10 +84,12 @@ void VulkanEngine::Init(GLFWwindow* renderWindow, bool _displayDebugMenu) {
 
 void VulkanEngine::initDescriptors() {
     std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
-            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3}
     };
     // 10 sets with 1 image each
-    globalDescriptorAllocator.init(_device, 10, sizes);
+    globalDescriptorAllocator.init(_device, 20, sizes);
 
     {
         DescriptorLayoutBuilder builder;
@@ -135,7 +137,7 @@ void VulkanEngine::initDescriptors() {
         };
 
         _frames[i]._frameDescriptors = DescriptorAllocatorGrowable{};
-        _frames[i]._frameDescriptors.init(_device, 1000, frame_sizes);
+        _frames[i]._frameDescriptors.init(_device, 20, frame_sizes);
 
         _mainDeletionQueue.pushFunction([&, i]() {
            _frames[i]._frameDescriptors.destroyPools(_device);
@@ -1528,7 +1530,7 @@ void GLTFMetallic_roughness::clearResources(VkDevice device) {
 
 MaterialInstance GLTFMetallic_roughness::writeMaterial(VkDevice device, MaterialPass pass,
                                                             const GLTFMetallic_roughness::MaterialResources &resources,
-                                                                            DescriptorAllocatorGrowable descriptorAllocator) {
+                                                                            DescriptorAllocatorGrowable& descriptorAllocator) {
 
     MaterialInstance matData;
     matData.passType = pass;
@@ -1537,7 +1539,6 @@ MaterialInstance GLTFMetallic_roughness::writeMaterial(VkDevice device, Material
     } else {
         matData.pipeline = &opaquePipeline;
     }
-
     matData.materialSet = descriptorAllocator.allocate(device, materialLayout);
 
     writer.clear();

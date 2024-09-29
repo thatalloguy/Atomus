@@ -67,5 +67,5 @@ target_link_libraries(AtomusVulkan PRIVATE glfw Vulkan::Vulkan)
 
 
 target_include_directories(AtomusVulkan PRIVATE "Thirdparty/imgui")
-target_include_directories(AtomusVulkan PRIVATE "Thirdparty/stb")
+target_include_directories(AtomusVulkan PRIVATE "Thirdparty/stb_image")
 target_include_directories(AtomusVulkan PRIVATE "Thirdparty/glm")
